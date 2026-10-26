@@ -25,8 +25,13 @@ from PySide6.QtWidgets import (
 from app.constants import APP_NAME, APP_VERSION
 from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, LoadResult, ModelTarget
+from app.ui.chat import ChatPage
+from app.ui.discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
 from app.ui.icons import app_icon, make_icon
+from app.ui.models import ModelsPage
+from app.ui.server import ServerPage
+from app.ui.settings import SettingsPage
 from app.ui.services import AppServices
 from app.ui.theme import current_palette, set_window_theme
 from app.ui.widgets import StatusChip
@@ -97,12 +102,6 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget()
         self.pages: dict[str, QWidget] = {}
-        from app.ui.chat import ChatPage
-        from app.ui.discover import DiscoverPage
-        from app.ui.models import ModelsPage
-        from app.ui.server import ServerPage
-        from app.ui.settings import SettingsPage
-
         page_types = {
             "chat": ChatPage,
             "discover": DiscoverPage,
@@ -646,3 +645,4 @@ class MainWindow(QMainWindow):
                 worker.wait(6000)
         if self._unload_worker is not None and self._unload_worker.isRunning():
             self._unload_worker.wait(6000)
+
