@@ -18,6 +18,7 @@ hiddenimports = [
     "uvicorn.lifespan.on",
     "PySide6.QtSvg",
 ]
+hiddenimports += collect_submodules("app.ui")
 hiddenimports += collect_submodules("uvicorn")
 
 excludes = [
