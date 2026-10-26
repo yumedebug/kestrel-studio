@@ -9,7 +9,14 @@ Set-Location -LiteralPath $Root
 
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 if (-not (Test-Path -LiteralPath $Python)) {
-   throw "Python 3.12 virtual environment not found at $Python. Create it with: py -3.12 -m venv .venv"
+    # CI installs dependencies into the interpreter selected by setup-python.
+    # Use that interpreter when no project-local venv is present.
+    $SystemPython = Get-Command python -ErrorAction SilentlyContinue
+    if ($SystemPython) {
+        $Python = $SystemPython.Source
+    } else {
+        throw "Python 3.12 was not found. Create .venv with: py -3.12 -m venv .venv"
+    }
 }
 
 if ($InstallDevDeps) {
