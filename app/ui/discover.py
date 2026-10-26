@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 9122)
+Total output lines: 878
+
 """Discover page: Hugging Face GGUF search, file listing and downloads."""
 
 from __future__ import annotations
@@ -279,6 +282,7 @@ class DiscoverPage(QWidget):
         self._completed_seen: set[str] = set()
         self._initial_search_done = False
         self._searching = False
+        self._search_pending = False
         self._loading_more = False
         self._limit = 25
         self._destination = Path(str(services.settings.get("general.model_directory")))
@@ -423,19 +427,7 @@ class DiscoverPage(QWidget):
         details_layout.addLayout(save_row)
         details_layout.addWidget(self.download_button)
         splitter.addWidget(details_card)
-        splitter.setStretchFactor(0, 2)
-        splitter.setStretchFactor(1, 3)
-        splitter.setSizes([360, 640])
-        layout.addWidget(splitter, 1)
-
-        # Downloads panel.
-        downloads_card = Card(soft=True)
-        downloads_layout = QVBoxLayout(downloads_card)
-        downloads_layout.setContentsMargins(12, 8, 12, 8)
-        downloads_layout.setSpacing(5)
-        downloads_header = QHBoxLayout()
-        downloads_header.addWidget(section_title("Downloads"))
-        self.downloads_summary = muted_label("No active downloads")
+        splitt…122 tokens truncated…ads_summary = muted_label("No active downloads")
         self.downloads_summary.setWordWrap(False)
         self.downloads_summary.setStyleSheet("font-size: 8.5pt;")
         downloads_header.addWidget(self.downloads_summary)
@@ -472,6 +464,10 @@ class DiscoverPage(QWidget):
 
     def search(self, *_args) -> None:
         if self._searching:
+            # Keep the latest user intent. The current Hub request cannot be
+            # interrupted, but the new query/sort/filter is run as soon as it
+            # finishes instead of silently dropping the user's Search click.
+            self._search_pending = True
             return
         query = self.search_input.text().strip()
         sort = str(self.sort_combo.currentData())
@@ -490,6 +486,10 @@ class DiscoverPage(QWidget):
 
         def done(models):
             self._searching = False
+            if self._search_pending:
+                self._search_pending = False
+                QTimer.singleShot(0, self.search)
+                return
             self.search_button.setEnabled(True)
             self.search_button.setText("Search")
             self._results = list(models)
@@ -501,6 +501,10 @@ class DiscoverPage(QWidget):
 
         def failed(message, detail):
             self._searching = False
+            if self._search_pending:
+                self._search_pending = False
+                QTimer.singleShot(0, self.search)
+                return
             self.search_button.setEnabled(True)
             self.search_button.setText("Search")
             self.search_status.setText(message)
@@ -527,6 +531,10 @@ class DiscoverPage(QWidget):
 
         def done(models):
             self._searching = False
+            if self._search_pending:
+                self._search_pending = False
+                QTimer.singleShot(0, self.search)
+                return
             self.search_button.setEnabled(True)
             self._results = list(models)
             self._populate_results(models)
@@ -535,6 +543,10 @@ class DiscoverPage(QWidget):
 
         def failed(message, detail):
             self._searching = False
+            if self._search_pending:
+                self._search_pending = False
+                QTimer.singleShot(0, self.search)
+                return
             self.search_button.setEnabled(True)
             self.search_status.setText(message)
             self.search_status.setStyleSheet(
@@ -854,3 +866,4 @@ class DiscoverPage(QWidget):
     def shutdown(self) -> None:
         self._poll_timer.stop()
         self.downloads.shutdown()
+

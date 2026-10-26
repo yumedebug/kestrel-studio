@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -167,16 +168,28 @@ class HuggingFaceClient:
         gguf_only: bool = True,
     ) -> list[HFModel]:
         try:
-            results = self._api().list_models(
+            api = self._api()
+            search_options = dict(
                 search=query.strip() or None,
                 filter="gguf" if gguf_only else None,
                 sort=sort,
-                direction=-1,
                 limit=limit,
                 full=True,
                 cardData=True,
                 token=self.token,
             )
+            # ``direction`` was removed from HfApi.list_models in huggingface_hub
+            # 2.x. Check the installed client API instead of assuming a version,
+            # so search works with both the pinned 2.x release and older installs.
+            try:
+                parameters = inspect.signature(api.list_models).parameters
+            except (TypeError, ValueError):
+                parameters = {}
+            if "direction" in parameters:
+                search_options["direction"] = -1
+            # Materialize inside the try block: list_models performs its HTTP
+            # request lazily, so errors can otherwise escape untranslated.
+            results = list(api.list_models(**search_options))
         except Exception as exc:
             raise HFError(_hf_message(exc), kind=_hf_kind(exc)) from exc
 
@@ -312,3 +325,4 @@ def _hf_kind(exc: Exception) -> str:
     if any(word in text for word in ("timeout", "connection", "getaddrinfo", "ssl")) or "connect" in name:
         return "network_error"
     return "hf_error"
+
