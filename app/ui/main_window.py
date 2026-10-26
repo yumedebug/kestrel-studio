@@ -29,6 +29,7 @@ from app.ui.chat import ChatPage
 from app.ui.hf_discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
 from app.ui.icons import app_icon, make_icon
+from app.ui.i18n import localize_widget_tree
 from app.ui.models import ModelsPage
 from app.ui.server import ServerPage
 from app.ui.settings import SettingsPage
@@ -41,19 +42,19 @@ log = logging.getLogger(__name__)
 
 # key, label, icon name, page class attribute
 NAV_PAGES: tuple[tuple[str, str, str], ...] = (
-    ("chat", "Chat", "chat"),
-    ("discover", "Discover", "compass"),
-    ("models", "My Models", "cube"),
-    ("server", "Local Server", "server"),
-    ("settings", "Settings", "settings"),
+    ("chat", "チャット", "chat"),
+    ("discover", "モデルを探す", "compass"),
+    ("models", "モデル管理", "cube"),
+    ("server", "API サーバー", "server"),
+    ("settings", "設定", "settings"),
 )
 
 _STATE_TEXT = {
-    "idle": "No model",
-    "loading": "Loading…",
-    "unloading": "Unloading…",
-    "ready": "Ready",
-    "error": "Load failed",
+    "idle": "モデル未選択",
+    "loading": "読み込み中…",
+    "unloading": "モデルを解放中…",
+    "ready": "準備完了",
+    "error": "読み込み失敗",
 }
 
 
@@ -82,6 +83,7 @@ class MainWindow(QMainWindow):
         self.statusBar().setSizeGripEnabled(False)
         self.statusBar().setFixedHeight(24)
         self.setWindowIcon(app_icon())
+        localize_widget_tree(self)
 
     # -- construction ------------------------------------------------------
     def _build(self) -> None:
@@ -175,7 +177,7 @@ class MainWindow(QMainWindow):
         self.library_summary.setWordWrap(True)
         layout.addWidget(self.library_summary)
 
-        hint = QLabel("Chats stay on this PC unless you use a cloud model.")
+        hint = QLabel("クラウドモデルを使う場合を除き、会話はこの PC 内に保存されます。")
         hint.setProperty("variant", "faint")
         hint.setWordWrap(True)
         hint.setStyleSheet("font-size: 8pt; padding: 2px 8px 0 8px;")
@@ -185,30 +187,30 @@ class MainWindow(QMainWindow):
     def _build_topbar(self) -> QFrame:
         topbar = QFrame()
         topbar.setObjectName("topbar")
-        topbar.setFixedHeight(58)
+        topbar.setMinimumHeight(64)
         layout = QHBoxLayout(topbar)
-        layout.setContentsMargins(18, 8, 18, 8)
-        layout.setSpacing(10)
+        layout.setContentsMargins(22, 10, 22, 10)
+        layout.setSpacing(12)
 
-        self.page_title = QLabel("Chat")
+        self.page_title = QLabel("チャット")
         self.page_title.setObjectName("pageTitle")
         layout.addWidget(self.page_title)
         layout.addStretch(1)
 
-        self.model_name = QLabel("No model loaded")
+        self.model_name = QLabel("モデルが選択されていません")
         self.model_name.setProperty("variant", "muted")
         self.model_name.setStyleSheet("font-size: 9pt;")
         self.model_name.setMaximumWidth(320)
         layout.addWidget(self.model_name)
 
-        self.change_model_button = QPushButton("Change model")
+        self.change_model_button = QPushButton("モデルを選択")
         self.change_model_button.setProperty("variant", "chip")
         self.change_model_button.setCursor(Qt.PointingHandCursor)
         self.change_model_button.clicked.connect(self._show_model_menu)
         layout.addWidget(self.change_model_button)
 
         self.status_chip = StatusChip()
-        self.status_chip.set_status("idle", "No model")
+        self.status_chip.set_status("idle", "モデル未選択")
         layout.addWidget(self.status_chip)
         return topbar
 
@@ -266,6 +268,7 @@ class MainWindow(QMainWindow):
                 page.refresh()
         except Exception:
             log.exception("failed to refresh page %s", key)
+        localize_widget_tree(self)
 
     # -- model selection ---------------------------------------------------
     def _show_model_menu(self) -> None:
@@ -380,18 +383,19 @@ class MainWindow(QMainWindow):
         if state == "ready" and name:
             kind = "Local" if status.get("kind") == "local" else "Cloud"
             provider = status.get("provider") or ""
-            self.model_name.setText(f"{name}  ·  {kind}")
+            kind_label = "ローカル" if kind == "Local" else "クラウド"
+            self.model_name.setText(f"{name}  ·  {kind_label}")
             detail = target.get("path") or provider
             self.model_name.setToolTip(f"{kind}: {name}\n{detail}" if detail else f"{kind}: {name}")
         elif state == "loading":
             loading_name = name or "model"
-            self.model_name.setText(f"Loading {loading_name}…")
+            self.model_name.setText(f"読み込み中: {loading_name}…")
             self.model_name.setToolTip("")
         elif state == "unloading":
-            self.model_name.setText("Unloading…")
+            self.model_name.setText("モデルを解放中…")
             self.model_name.setToolTip("")
         else:
-            self.model_name.setText("No model loaded")
+            self.model_name.setText("モデルが選択されていません")
             self.model_name.setToolTip("")
 
         text = _STATE_TEXT.get(state, state.title())
@@ -413,6 +417,7 @@ class MainWindow(QMainWindow):
                 log.exception("failed to update %s page status", key)
 
         self._update_sidebar_summary()
+        localize_widget_tree(self)
 
     def _update_sidebar_summary(self) -> None:
         try:
@@ -645,4 +650,3 @@ class MainWindow(QMainWindow):
                 worker.wait(6000)
         if self._unload_worker is not None and self._unload_worker.isRunning():
             self._unload_worker.wait(6000)
-

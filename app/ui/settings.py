@@ -41,6 +41,7 @@ from app.core.providers import (
 )
 from app.core.settings import DEFAULT_SYSTEM_PROMPT
 from app.ui.dialogs import confirm, open_url, show_error
+from app.ui.i18n import localize_widget_tree
 from app.ui.services import AppServices
 from app.ui.theme import current_palette
 from app.ui.widgets import Card, muted_label, section_title
@@ -70,8 +71,8 @@ class SettingsPage(QWidget):
     def _section(self, title: str, description: str) -> tuple[Card, QFormLayout]:
         card = Card()
         outer = QVBoxLayout(card)
-        outer.setContentsMargins(18, 16, 18, 16)
-        outer.setSpacing(11)
+        outer.setContentsMargins(22, 20, 22, 20)
+        outer.setSpacing(14)
         outer.addWidget(section_title(title))
         if description:
             desc = muted_label(description)
@@ -112,8 +113,8 @@ class SettingsPage(QWidget):
         self._cards: dict[str, QWidget] = {}
         content = QWidget()
         self.content_layout = QVBoxLayout(content)
-        self.content_layout.setContentsMargins(20, 4, 20, 20)
-        self.content_layout.setSpacing(14)
+        self.content_layout.setContentsMargins(24, 8, 24, 24)
+        self.content_layout.setSpacing(18)
         scroll.setWidget(content)
         root.addWidget(scroll, 1)
 
@@ -251,8 +252,8 @@ class SettingsPage(QWidget):
         # Cloud ------------------------------------------------------------
         cloud_card = Card()
         cloud_outer = QVBoxLayout(cloud_card)
-        cloud_outer.setContentsMargins(18, 16, 18, 16)
-        cloud_outer.setSpacing(10)
+        cloud_outer.setContentsMargins(22, 20, 22, 20)
+        cloud_outer.setSpacing(14)
         cloud_outer.addWidget(section_title("Cloud Providers"))
         cloud_outer.addWidget(
             muted_label(
@@ -297,7 +298,18 @@ class SettingsPage(QWidget):
         pform.addRow("Default model", self.provider_model)
         self.provider_key = QLineEdit()
         self.provider_key.setEchoMode(QLineEdit.Password)
-        pform.addRow("API key", self.provider_key)
+        self.provider_key.setPlaceholderText("API キーを入力")
+        key_row = QHBoxLayout()
+        key_row.setSpacing(8)
+        key_row.addWidget(self.provider_key, 1)
+        self.provider_key_visible = QCheckBox("表示")
+        self.provider_key_visible.toggled.connect(
+            lambda visible: self.provider_key.setEchoMode(
+                QLineEdit.Normal if visible else QLineEdit.Password
+            )
+        )
+        key_row.addWidget(self.provider_key_visible)
+        pform.addRow("API キー", key_row)
         detail_layout.addLayout(pform)
         self.provider_key_status = muted_label("")
         self.provider_key_status.setStyleSheet("font-size: 8.5pt;")
@@ -572,6 +584,7 @@ class SettingsPage(QWidget):
             pid = str(item.data(Qt.UserRole))
             marker = "  ✓" if self.services.cloud_configured(pid) else ""
             item.setText(PROVIDERS[pid].name + marker)
+        localize_widget_tree(self)
 
     def _save_provider(self) -> None:
         spec = get_provider(self._current_provider)
@@ -610,6 +623,7 @@ class SettingsPage(QWidget):
         )
         self.show_status_message.emit(f"{spec.name} settings saved")
         self.cloud_changed.emit()
+        localize_widget_tree(self)
 
     def _remove_provider_key(self) -> None:
         spec = get_provider(self._current_provider)
@@ -684,6 +698,7 @@ class SettingsPage(QWidget):
                 self.provider_message.setStyleSheet(
                     f"font-size: 8.5pt; color: {current_palette()['warning']};"
                 )
+            localize_widget_tree(self)
 
         def failed(message, detail):
             self.test_provider_button.setEnabled(True)
@@ -693,6 +708,7 @@ class SettingsPage(QWidget):
             self.provider_message.setStyleSheet(
                 f"font-size: 8.5pt; color: {current_palette()['danger']};"
             )
+            localize_widget_tree(self)
 
         worker = TaskWorker(work)
         worker.succeeded.connect(done)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from string import Template
 
-from PySide6.QtGui import QColor, QFont, QPalette
+from PySide6.QtGui import QColor, QFont, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication
 
 from app.constants import THEMES
@@ -125,8 +125,8 @@ QPushButton {
     color: $text;
     border: 1px solid $border_strong;
     border-radius: 10px;
-    padding: 8px 16px;
-    min-height: 22px;
+    padding: 10px 18px;
+    min-height: 24px;
 }
 QPushButton:hover {
     background: $bg_hover;
@@ -167,7 +167,7 @@ QPushButton[variant="ghost"] {
     background: transparent;
     border: 1px solid transparent;
     color: $text_muted;
-    padding: 5px 9px;
+    padding: 8px 12px;
 }
 QPushButton[variant="ghost"]:hover {
     background: $bg_hover;
@@ -179,7 +179,7 @@ QPushButton[variant="nav"] {
     border-radius: 10px;
     color: $text_muted;
     text-align: left;
-    padding: 10px 14px;
+    padding: 12px 16px;
     font-weight: 500;
 }
 QPushButton[variant="nav"]:hover {
@@ -193,7 +193,8 @@ QPushButton[variant="nav"]:checked {
 }
 QPushButton[variant="chip"] {
     border-radius: 13px;
-    padding: 5px 12px;
+    padding: 8px 15px;
+    min-height: 24px;
     background: $bg_input;
     color: $text_muted;
     font-size: 9pt;
@@ -225,9 +226,21 @@ QLineEdit, QPlainTextEdit, QTextEdit, QSpinBox, QDoubleSpinBox {
     color: $text;
     border: 1px solid $border_strong;
     border-radius: 10px;
-    padding: 9px 11px;
+    padding: 11px 14px;
     selection-background-color: $selection;
     selection-color: $text;
+}
+QSpinBox, QDoubleSpinBox {
+    min-width: 96px;
+    padding-right: 30px;
+}
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    width: 20px;
+    subcontrol-origin: border;
+    border: none;
+    background: transparent;
+    margin: 3px 4px;
 }
 QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
     border-color: $accent;
@@ -244,8 +257,8 @@ QComboBox {
     color: $text;
     border: 1px solid $border_strong;
     border-radius: 10px;
-    padding: 8px 11px;
-    min-height: 24px;
+    padding: 10px 14px;
+    min-height: 26px;
 }
 QComboBox:hover {
     border-color: $text_faint;
@@ -255,7 +268,7 @@ QComboBox:focus {
 }
 QComboBox::drop-down {
     border: none;
-    width: 22px;
+    width: 28px;
 }
 QComboBox QAbstractItemView {
     background: $bg_elevated;
@@ -354,7 +367,8 @@ QListWidget, QTreeWidget, QTableWidget {
 }
 QListWidget::item {
     border-radius: 8px;
-    padding: 8px;
+    padding: 10px 12px;
+    margin: 2px 1px;
     color: $text;
 }
 QListWidget::item:hover {
@@ -372,7 +386,7 @@ QTableWidget {
     alternate-background-color: $bg_input;
 }
 QTableWidget::item {
-    padding: 8px;
+    padding: 10px 12px;
     border: none;
 }
 QTableWidget::item:selected {
@@ -384,7 +398,7 @@ QHeaderView::section {
     color: $text_muted;
     border: none;
     border-bottom: 1px solid $border;
-    padding: 8px;
+    padding: 10px 12px;
     font-weight: 600;
 }
 QTableCornerButton::section {
@@ -445,7 +459,7 @@ QToolButton {
     background: transparent;
     border: none;
     border-radius: 6px;
-    padding: 4px;
+    padding: 6px;
     color: $text_muted;
 }
 QToolButton:hover {
@@ -550,7 +564,12 @@ def apply_theme(app: QApplication, theme: str, font_size: int = 10) -> None:
     qpalette.setColor(QPalette.Disabled, QPalette.Text, QColor(colors["text_faint"]))
     qpalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(colors["text_faint"]))
     app.setPalette(qpalette)
-    font = QFont("Segoe UI")
+    families = set(QFontDatabase.families())
+    family = next(
+        (name for name in ("Yu Gothic UI", "Meiryo UI", "Segoe UI") if name in families),
+        "Segoe UI",
+    )
+    font = QFont(family)
     font.setPointSize(font_size)
     app.setFont(font)
     app.setStyleSheet(build_stylesheet(theme, font_size))

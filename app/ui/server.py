@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from app.api.server import ApiServerError
 from app.ui.dialogs import show_error
+from app.ui.i18n import localize_widget_tree
 from app.ui.services import AppServices
 from app.ui.theme import current_palette
 from app.ui.widgets import Card, StatusChip, muted_label, section_title
@@ -43,8 +44,8 @@ class ServerPage(QWidget):
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 14)
-        layout.setSpacing(16)
+        layout.setContentsMargins(24, 20, 24, 18)
+        layout.setSpacing(18)
 
         header = QHBoxLayout()
         header.addWidget(section_title("OpenAI-compatible API"))
@@ -63,8 +64,8 @@ class ServerPage(QWidget):
 
         status_card = Card()
         status_layout = QHBoxLayout(status_card)
-        status_layout.setContentsMargins(18, 16, 18, 16)
-        status_layout.setSpacing(18)
+        status_layout.setContentsMargins(22, 20, 22, 20)
+        status_layout.setSpacing(22)
         self.chip = StatusChip()
         self.chip.set_status("idle", "Server stopped")
         status_layout.addWidget(self.chip)
@@ -84,7 +85,7 @@ class ServerPage(QWidget):
 
         grid_card = Card(soft=True)
         grid = QGridLayout(grid_card)
-        grid.setContentsMargins(18, 14, 18, 14)
+        grid.setContentsMargins(22, 18, 22, 18)
         grid.setHorizontalSpacing(28)
         grid.setVerticalSpacing(11)
         self.values: dict[str, QLabel] = {}
@@ -273,6 +274,7 @@ class ServerPage(QWidget):
                 model=status.get("model_id") or "local/model",
             )
         )
+        localize_widget_tree(self)
         if not running:
             self.start_button.setEnabled(True)
 

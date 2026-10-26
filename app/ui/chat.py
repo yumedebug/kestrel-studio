@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from PySide6.QtCore import QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
 from app.core.database import Chat, Database, DatabaseError, Message
 from app.core.types import GenerationParams, ModelTarget
 from app.ui.dialogs import confirm, show_error
+from app.ui.i18n import ja
 from app.ui.services import AppServices
 from app.ui.theme import current_palette
 from app.ui.widgets import (
@@ -60,7 +61,7 @@ class GenerationDialog(QDialog):
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Generation settings")
+        self.setWindowTitle("生成設定")
         self.setMinimumWidth(540)
         self.setModal(True)
         layout = QVBoxLayout(self)
@@ -168,13 +169,27 @@ class PromptEdit(QPlainTextEdit):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setPlaceholderText(
-            "Message the model…  Enter to send, Shift+Enter for a new line"
-        )
-        self.setFixedHeight(76)
+        self.setPlaceholderText(ja("Message the model…  Enter to send, Shift+Enter for a new line"))
+        self.setMinimumHeight(84)
+        self.setMaximumHeight(180)
         self.setTabChangesFocus(True)
         self._max_height = 170
         self.document().contentsChanged.connect(self._adjust_height)
+        self._apply_contrast()
+
+    def _apply_contrast(self) -> None:
+        c = current_palette()
+        self.setStyleSheet(
+            "QPlainTextEdit { "
+            f"background: {c['bg_input']}; color: {c['text']}; "
+            f"selection-background-color: {c['selection']}; "
+            f"selection-color: {c['text']}; }}"
+        )
+
+    def changeEvent(self, event) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if event.type() in (QEvent.PaletteChange, QEvent.StyleChange):
+            QTimer.singleShot(0, self._apply_contrast)
 
     def keyPressEvent(self, event) -> None:  # type: ignore[override]
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
@@ -190,7 +205,7 @@ class PromptEdit(QPlainTextEdit):
         doc_height = self.document().size().height()
         margins = self.contentsMargins().top() + self.contentsMargins().bottom() + 22
         desired = int(doc_height + margins)
-        self.setFixedHeight(max(76, min(desired, self._max_height)))
+        self.setFixedHeight(max(84, min(desired, self._max_height)))
 
 
 class ChatPage(QWidget):
@@ -242,12 +257,12 @@ class ChatPage(QWidget):
         conversations.setFixedWidth(238)
         conversations.setStyleSheet("QFrame { background: transparent; }")
         conv_layout = QVBoxLayout(conversations)
-        conv_layout.setContentsMargins(14, 16, 10, 14)
-        conv_layout.setSpacing(10)
+        conv_layout.setContentsMargins(16, 18, 12, 16)
+        conv_layout.setSpacing(12)
         header = QHBoxLayout()
         header.addWidget(section_title("Chats"))
         header.addStretch(1)
-        self.new_chat_button = QPushButton("New Chat")
+        self.new_chat_button = QPushButton(ja("New Chat"))
         self.new_chat_button.setProperty("variant", "chip")
         self.new_chat_button.setCursor(Qt.PointingHandCursor)
         self.new_chat_button.clicked.connect(self.new_chat)
@@ -255,7 +270,7 @@ class ChatPage(QWidget):
         conv_layout.addLayout(header)
 
         self.chat_list = QListWidget()
-        self.chat_list.setSpacing(2)
+        self.chat_list.setSpacing(5)
         self.chat_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.chat_list.customContextMenuRequested.connect(self._chat_context_menu)
         self.chat_list.currentItemChanged.connect(self._conversation_selected)
@@ -269,12 +284,12 @@ class ChatPage(QWidget):
         # Main chat panel.
         main = QWidget()
         main_layout = QVBoxLayout(main)
-        main_layout.setContentsMargins(18, 12, 18, 12)
-        main_layout.setSpacing(14)
+        main_layout.setContentsMargins(24, 18, 24, 16)
+        main_layout.setSpacing(16)
 
         toolbar = QHBoxLayout()
         toolbar.setSpacing(10)
-        self.title_label = QLabel("Chat")
+        self.title_label = QLabel(ja("Chat"))
         self.title_label.setObjectName("sectionTitle")
         toolbar.addWidget(self.title_label)
         self.model_badge = QLabel("")
@@ -282,12 +297,12 @@ class ChatPage(QWidget):
         self.model_badge.setStyleSheet("font-size: 8.5pt;")
         toolbar.addWidget(self.model_badge)
         toolbar.addStretch(1)
-        self.params_button = QPushButton("Parameters")
+        self.params_button = QPushButton(ja("Parameters"))
         self.params_button.setProperty("variant", "ghost")
         self.params_button.setCursor(Qt.PointingHandCursor)
         self.params_button.clicked.connect(self._edit_params)
         toolbar.addWidget(self.params_button)
-        self.delete_chat_button = QPushButton("Delete")
+        self.delete_chat_button = QPushButton(ja("Delete"))
         self.delete_chat_button.setProperty("variant", "ghost")
         self.delete_chat_button.setCursor(Qt.PointingHandCursor)
         self.delete_chat_button.clicked.connect(self._delete_current_chat)
@@ -334,8 +349,8 @@ class ChatPage(QWidget):
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.messages_container = QWidget()
         self.messages_layout = QVBoxLayout(self.messages_container)
-        self.messages_layout.setContentsMargins(6, 10, 12, 14)
-        self.messages_layout.setSpacing(10)
+        self.messages_layout.setContentsMargins(12, 16, 16, 18)
+        self.messages_layout.setSpacing(14)
         self.messages_layout.addStretch(1)
         self.scroll.setWidget(self.messages_container)
         layout.addWidget(self.scroll, 1)
@@ -365,20 +380,20 @@ class ChatPage(QWidget):
     def _build_composer(self) -> QWidget:
         wrapper = QWidget()
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(0, 4, 0, 0)
-        layout.setSpacing(6)
+        layout.setContentsMargins(0, 8, 0, 0)
+        layout.setSpacing(9)
         self.model_hint = QHBoxLayout()
         self.model_hint.setContentsMargins(2, 0, 2, 0)
         self.model_hint_label = muted_label("No model loaded")
         self.model_hint_label.setStyleSheet("font-size: 8.5pt;")
         self.model_hint.addWidget(self.model_hint_label)
-        self.choose_cloud_button = QPushButton("Cloud model")
+        self.choose_cloud_button = QPushButton(ja("Cloud model"))
         self.choose_cloud_button.setProperty("variant", "ghost")
         self.choose_cloud_button.setStyleSheet("font-size: 8.5pt;")
         self.choose_cloud_button.setCursor(Qt.PointingHandCursor)
         self.choose_cloud_button.clicked.connect(self.cloud_requested.emit)
         self.model_hint.addWidget(self.choose_cloud_button)
-        self.choose_local_button = QPushButton("My Models")
+        self.choose_local_button = QPushButton(ja("My Models"))
         self.choose_local_button.setProperty("variant", "ghost")
         self.choose_local_button.setStyleSheet("font-size: 8.5pt;")
         self.choose_local_button.setCursor(Qt.PointingHandCursor)
@@ -394,15 +409,15 @@ class ChatPage(QWidget):
         composer = QFrame()
         composer.setProperty("card", "true")
         composer_layout = QVBoxLayout(composer)
-        composer_layout.setContentsMargins(12, 9, 10, 8)
-        composer_layout.setSpacing(10)
+        composer_layout.setContentsMargins(18, 14, 16, 14)
+        composer_layout.setSpacing(12)
         self.prompt = PromptEdit()
         self.prompt.send_requested.connect(self.send_message)
         composer_layout.addWidget(self.prompt)
 
         actions = QHBoxLayout()
         actions.setSpacing(9)
-        self.system_button = QPushButton("System prompt")
+        self.system_button = QPushButton(ja("System prompt"))
         self.system_button.setProperty("variant", "ghost")
         self.system_button.setCursor(Qt.PointingHandCursor)
         self.system_button.clicked.connect(self._edit_params)
@@ -410,13 +425,13 @@ class ChatPage(QWidget):
         self.new_chat_shortcut = QShortcut(QKeySequence("Ctrl+N"), self)
         self.new_chat_shortcut.activated.connect(self.new_chat)
         actions.addStretch(1)
-        self.stop_button = QPushButton("Stop")
+        self.stop_button = QPushButton(ja("Stop"))
         self.stop_button.setProperty("variant", "danger")
         self.stop_button.setCursor(Qt.PointingHandCursor)
         self.stop_button.clicked.connect(self.stop_generation)
         self.stop_button.hide()
         actions.addWidget(self.stop_button)
-        self.send_button = QPushButton("Send")
+        self.send_button = QPushButton("送信")
         self.send_button.setProperty("variant", "primary")
         self.send_button.setCursor(Qt.PointingHandCursor)
         self.send_button.clicked.connect(self.send_message)
@@ -641,7 +656,7 @@ class ChatPage(QWidget):
         )
         self._pending_system = str(self.services.settings.get("chat.system_prompt", ""))
         self._clear_messages()
-        self.title_label.setText("New chat")
+        self.title_label.setText(ja("New chat"))
         self.model_badge.setText(
             self._status.get("display_name", "") if self._status.get("state") == "ready" else ""
         )
@@ -649,7 +664,7 @@ class ChatPage(QWidget):
         self.chat_list.clearSelection()
         self.delete_chat_button.setEnabled(False)
         self._hide_error()
-        hint = QLabel("New conversation. Your messages will be saved locally.")
+        hint = QLabel(ja("New conversation. Your messages will be saved locally."))
         hint.setProperty("variant", "faint")
         hint.setAlignment(Qt.AlignCenter)
         hint.setContentsMargins(0, 24, 0, 0)
@@ -829,7 +844,7 @@ class ChatPage(QWidget):
         self._generating = True
         self._apply_generation_controls()
         self.generation_active.emit(True)
-        self.generation_info.setText("Generating…")
+        self.generation_info.setText(ja("Generating…"))
         self._update_timer.start()
 
         worker = ChatWorker(
@@ -858,9 +873,7 @@ class ChatPage(QWidget):
         self._pending_update = False
         was_near_bottom = self._near_bottom()
         self._assistant_bubble.set_streaming_text(self._stream_text)
-        self.generation_info.setText(
-            f"Generating… {len(self._stream_text):,} characters"
-        )
+        self.generation_info.setText(f"生成中… {len(self._stream_text):,} 文字")
         if was_near_bottom:
             QTimer.singleShot(10, self._scroll_to_bottom)
 
@@ -902,16 +915,16 @@ class ChatPage(QWidget):
 
         if usage:
             tokens = usage.get("completion_tokens")
-            info = f"{tokens:,} tokens" if isinstance(tokens, int) else ""
+            info = f"{tokens:,} トークン" if isinstance(tokens, int) else ""
         else:
             info = ""
         speed = len(content) / elapsed
-        suffix = " · stopped" if cancelled else ""
+        suffix = " · 停止" if cancelled else ""
         self.generation_info.setText(
-            f"{info + ' · ' if info else ''}{speed:,.0f} chars/s{suffix}"
+            f"{info + ' · ' if info else ''}{speed:,.0f} 文字/秒{suffix}"
         )
         if not content.strip():
-            self.generation_info.setText("Stopped" if cancelled else "The model returned an empty response.")
+            self.generation_info.setText("生成を停止しました" if cancelled else "モデルから空の応答が返されました。")
         self._finish_generation()
         if chat_id == self._current_chat_id:
             self.refresh_conversations()
@@ -924,15 +937,15 @@ class ChatPage(QWidget):
             self._remove_bubble(self._assistant_bubble)
             self._assistant_bubble = None
         self._show_error(message, detail)
-        self.generation_info.setText("Generation failed")
+        self.generation_info.setText("生成に失敗しました")
         self._finish_generation()
 
     def stop_generation(self) -> None:
         if self._worker is not None and self._worker.isRunning():
             self._worker.stop()
             self.stop_button.setEnabled(False)
-            self.stop_button.setText("Stopping…")
-            self.generation_info.setText("Stopping…")
+            self.stop_button.setText("停止中…")
+            self.generation_info.setText("停止中…")
 
     # -- lifecycle ---------------------------------------------------------
     def shutdown(self) -> None:

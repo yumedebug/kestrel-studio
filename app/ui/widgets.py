@@ -6,8 +6,8 @@ import re
 from datetime import datetime
 from typing import Iterable
 
-from PySide6.QtCore import QPointF, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPixmap
+from PySide6.QtCore import QEvent, QPointF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui import icons
+from app.ui.i18n import ja
 from app.ui.theme import current_palette, markdown_stylesheet
 
 
@@ -40,7 +41,7 @@ def icon_button(name: str, tooltip: str, *, size: int = 16) -> QPushButton:
     button = QPushButton()
     button.setProperty("variant", "icon")
     button.setCursor(Qt.PointingHandCursor)
-    button.setToolTip(tooltip)
+    button.setToolTip(ja(tooltip))
     button.setIcon(_sized_icon(name, size))
     button.setIconSize(QSize(size, size))
     button.setFixedSize(size + 16, size + 16)
@@ -55,13 +56,13 @@ def _sized_icon(name: str, size: int) -> QIcon:
 
 
 def section_title(text: str) -> QLabel:
-    label = QLabel(text)
+    label = QLabel(ja(text))
     label.setObjectName("sectionTitle")
     return label
 
 
 def muted_label(text: str = "") -> QLabel:
-    label = QLabel(text)
+    label = QLabel(ja(text))
     label.setProperty("variant", "muted")
     label.setWordWrap(True)
     return label
@@ -81,8 +82,8 @@ class StatusChip(QFrame):
         self.setObjectName("statusChip")
         self.setFixedHeight(28)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 0, 12, 0)
-        layout.setSpacing(7)
+        layout.setContentsMargins(12, 0, 14, 0)
+        layout.setSpacing(9)
         self.dot = QLabel("●")
         self.dot.setFixedWidth(10)
         self.text = QLabel("No model")
@@ -94,8 +95,8 @@ class StatusChip(QFrame):
 
     def set_status(self, state: str, text: str, detail: str = "") -> None:
         self._state = state
-        self.text.setText(text)
-        self.setToolTip(detail)
+        self.text.setText(ja(text))
+        self.setToolTip(ja(detail))
         self._apply()
 
     def _apply(self) -> None:
@@ -124,9 +125,9 @@ class NoticeBar(QFrame):
         super().__init__(parent)
         self.setObjectName("notice")
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 8, 8, 8)
-        layout.setSpacing(8)
-        self.label = QLabel(text)
+        layout.setContentsMargins(14, 10, 10, 10)
+        layout.setSpacing(10)
+        self.label = QLabel(ja(text))
         self.label.setWordWrap(True)
         self.label.setStyleSheet("background: transparent;")
         self.close_button = icon_button("plus", "Dismiss")
@@ -139,7 +140,7 @@ class NoticeBar(QFrame):
         self.hide()
 
     def show_message(self, text: str) -> None:
-        self.label.setText(text)
+        self.label.setText(ja(text))
         self.show()
 
 
@@ -162,10 +163,10 @@ class EmptyState(QWidget):
             icons.make_icon(icon_name, current_palette()["text_faint"]).pixmap(48, 48)
         )
         icon_label.setAlignment(Qt.AlignCenter)
-        title_label = QLabel(title)
+        title_label = QLabel(ja(title))
         title_label.setProperty("variant", "heading")
         title_label.setAlignment(Qt.AlignCenter)
-        desc = QLabel(description)
+        desc = QLabel(ja(description))
         desc.setProperty("variant", "muted")
         desc.setAlignment(Qt.AlignCenter)
         desc.setWordWrap(True)
@@ -173,7 +174,7 @@ class EmptyState(QWidget):
         layout.addWidget(icon_label, 0, Qt.AlignCenter)
         layout.addWidget(title_label)
         layout.addWidget(desc, 0, Qt.AlignCenter)
-        self.action = QPushButton(action_text)
+        self.action = QPushButton(ja(action_text))
         self.action.setProperty("variant", "primary")
         self.action.setCursor(Qt.PointingHandCursor)
         self.action.setVisible(bool(action_text))
@@ -192,7 +193,19 @@ class RichTextBlock(QTextBrowser):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.document().setDocumentMargin(0)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.setStyleSheet("QTextBrowser { background: transparent; border: none; }")
+        c = current_palette()
+        # QTextBrowser renders Markdown through QTextDocument, so widget QSS alone
+        # does not reliably set the document's foreground on Windows.
+        browser_palette = self.palette()
+        browser_palette.setColor(QPalette.Text, QColor(c["text"]))
+        browser_palette.setColor(QPalette.Base, QColor(c["bg_elevated"]))
+        browser_palette.setColor(QPalette.Highlight, QColor(c["selection"]))
+        browser_palette.setColor(QPalette.HighlightedText, QColor(c["text"]))
+        self.setPalette(browser_palette)
+        self.setStyleSheet(
+            "QTextBrowser { background: transparent; border: none; "
+            f"color: {c['text']}; selection-background-color: {c['selection']}; }}"
+        )
         self._styles = markdown_stylesheet("dark")
         self._syncing = False
 
@@ -209,6 +222,21 @@ class RichTextBlock(QTextBrowser):
         if self._syncing:
             return
         QTimer.singleShot(0, self._sync_height)
+
+    def changeEvent(self, event) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if event.type() in (QEvent.PaletteChange, QEvent.StyleChange):
+            self._styles = markdown_stylesheet(
+                getattr(QApplication.instance(), "_kestrel_theme", "dark")
+            )
+            self.document().setDefaultStyleSheet(self._styles)
+            c = current_palette()
+            p = self.palette()
+            p.setColor(QPalette.Text, QColor(c["text"]))
+            p.setColor(QPalette.Base, QColor(c["bg_elevated"]))
+            p.setColor(QPalette.Highlight, QColor(c["selection"]))
+            p.setColor(QPalette.HighlightedText, QColor(c["text"]))
+            self.setPalette(p)
 
     def _sync_height(self) -> None:
         if self._syncing:
@@ -233,17 +261,17 @@ class CodeBlockWidget(QFrame):
         layout.setSpacing(0)
         header = QWidget()
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(11, 5, 7, 3)
-        header_layout.setSpacing(6)
+        header_layout.setContentsMargins(14, 8, 10, 6)
+        header_layout.setSpacing(8)
         lang_label = QLabel((language or "code").upper())
         lang_label.setProperty("variant", "faint")
         font = QFont("Consolas", 8)
         font.setLetterSpacing(QFont.AbsoluteSpacing, 0.6)
         lang_label.setFont(font)
-        self.copy_button = QPushButton("Copy")
+        self.copy_button = QPushButton(ja("Copy"))
         self.copy_button.setProperty("variant", "ghost")
         self.copy_button.setCursor(Qt.PointingHandCursor)
-        self.copy_button.setToolTip("Copy this code block")
+        self.copy_button.setToolTip(ja("Copy this code block"))
         self.copy_button.clicked.connect(self._copy)
         header_layout.addWidget(lang_label)
         header_layout.addStretch(1)
@@ -274,8 +302,8 @@ class CodeBlockWidget(QFrame):
 
     def _copy(self) -> None:
         QApplication.clipboard().setText(self._code)
-        self.copy_button.setText("Copied")
-        QTimer.singleShot(1200, lambda: self.copy_button.setText("Copy"))
+        self.copy_button.setText(ja("Copied"))
+        QTimer.singleShot(1200, lambda: self.copy_button.setText(ja("Copy")))
 
 
 class MarkdownView(QWidget):
@@ -414,15 +442,15 @@ class MessageBubble(QFrame):
         self.setMaximumWidth(900 if role == "assistant" else 780)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 12)
-        layout.setSpacing(6)
+        layout.setContentsMargins(18, 14, 18, 16)
+        layout.setSpacing(10)
 
         header = QHBoxLayout()
         header.setSpacing(8)
         role_text = {"user": "You", "assistant": "Assistant", "system": "System"}.get(
             role, role.title()
         )
-        role_label = QLabel(role_text)
+        role_label = QLabel(ja(role_text))
         role_label.setStyleSheet(
             f"color: {current_palette()['text_muted']}; font-weight: 600; font-size: 9pt;"
         )

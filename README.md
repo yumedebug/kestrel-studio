@@ -139,6 +139,6 @@ git remote add origin https://github.com/<OWNER>/<REPOSITORY>.git
 git push -u origin main
 ```
 
-`.github/workflows/windows.yml` のGitHub Actionsワークフローは、テスト、PyInstallerで固めたGUIの起動検証、Windows x64セットアップの作成を行う。`v0.1.2` のようなバージョンタグをpushすると、`KestrelStudio-Setup-x64.exe` をGitHub Releaseに添付する。
+`.github/workflows/windows.yml` のGitHub Actionsワークフローは、テスト、PyInstallerで固めたGUIの起動検証、Windows x64セットアップの作成を行う。`v0.1.3` のようなバージョンタグをpushすると、`KestrelStudio-Setup-x64.exe` をGitHub Releaseに添付する。
 
 バイナリ配布物はCIで生成され、意図的にGitからは除外されている。再配布の前に、モデル、プロバイダー、依存関係、llama.cppのライセンスを個別に確認すること。

@@ -10,7 +10,7 @@ from pathlib import Path
 APP_NAME = "Kestrel Studio"
 APP_SHORT_NAME = "Kestrel"
 APP_ID = "KestrelStudio"
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 APP_ORG = "Kestrel"
 APP_DESCRIPTION = "Local GGUF models and cloud providers in one desktop studio"
 APP_WEBSITE = "https://github.com/"

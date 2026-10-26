@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 from app.core.model_manager import ModelEntry, ModelManagerError
 from app.core.types import LoadResult
 from app.ui.dialogs import ModelLoadDialog, confirm, show_error
+from app.ui.i18n import localize_widget_tree
 from app.ui.services import AppServices
 from app.ui.theme import current_palette
 from app.ui.widgets import Card, muted_label, section_title
@@ -56,8 +57,8 @@ class ModelsPage(QWidget):
     # -- construction ------------------------------------------------------
     def _build(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 16, 20, 14)
-        layout.setSpacing(14)
+        layout.setContentsMargins(24, 20, 24, 18)
+        layout.setSpacing(18)
 
         header = QHBoxLayout()
         header.addWidget(section_title("Model library"))
@@ -150,6 +151,7 @@ class ModelsPage(QWidget):
         self.loading_label.setStyleSheet(f"color: {current_palette()['warning']};")
         layout.addWidget(self.loading_label)
         self._selection_changed()
+        localize_widget_tree(self)
 
     # -- data --------------------------------------------------------------
     def refresh(self) -> None:
@@ -246,6 +248,7 @@ class ModelsPage(QWidget):
         self.loading_label.setText(
             f"Loading {status.get('display_name')}…" if busy else ""
         )
+        localize_widget_tree(self)
 
     def update_inference_status(self, status: dict[str, Any]) -> None:
         self.refresh()

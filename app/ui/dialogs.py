@@ -25,6 +25,7 @@ from app.core.providers import PROVIDERS, PROVIDER_ORDER, get_provider, provider
 from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, ModelTarget
 from app.ui.services import AppServices
+from app.ui.i18n import ja
 from app.ui.theme import current_palette
 from app.ui.widgets import Card, muted_label, section_title
 from app.workers.workers import TaskWorker
@@ -33,8 +34,8 @@ from app.workers.workers import TaskWorker
 def show_error(parent: QWidget, title: str, message: str, detail: str = "") -> None:
     box = QMessageBox(parent)
     box.setIcon(QMessageBox.Critical)
-    box.setWindowTitle(title)
-    box.setText(message)
+    box.setWindowTitle(ja(title))
+    box.setText(ja(message))
     if detail:
         box.setDetailedText(detail[:8000])
     box.exec()
@@ -47,8 +48,8 @@ def show_info(parent: QWidget, title: str, message: str) -> None:
 def confirm(parent: QWidget, title: str, message: str) -> bool:
     result = QMessageBox.question(
         parent,
-        title,
-        message,
+        ja(title),
+        ja(message),
         QMessageBox.Yes | QMessageBox.Cancel,
         QMessageBox.Cancel,
     )
@@ -72,7 +73,7 @@ class CloudModelDialog(QDialog):
         self.services = services
         self.selected_target: ModelTarget | None = None
         self._worker: TaskWorker | None = None
-        self.setWindowTitle("Choose a cloud model")
+        self.setWindowTitle("クラウドモデルを選択")
         self.setMinimumWidth(560)
         self.setModal(True)
 
@@ -383,13 +384,13 @@ class ModelLoadDialog(QDialog):
             layout.addWidget(warning)
 
         buttons = QHBoxLayout()
-        reset = QPushButton("Reset to defaults")
+        reset = QPushButton(ja("Reset to defaults"))
         reset.clicked.connect(self._reset)
         buttons.addWidget(reset)
         buttons.addStretch(1)
-        cancel = QPushButton("Cancel")
+        cancel = QPushButton(ja("Cancel"))
         cancel.clicked.connect(self.reject)
-        load = QPushButton("Load Model")
+        load = QPushButton("モデルを読み込む")
         load.setProperty("variant", "primary")
         load.clicked.connect(self._accept)
         buttons.addWidget(cancel)

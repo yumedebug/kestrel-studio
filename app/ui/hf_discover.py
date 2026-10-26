@@ -38,6 +38,7 @@ from app.core.downloader import DownloadManager, DownloadTask
 from app.core.hf_client import HFError, HFModel, HFRepoDetails, HuggingFaceClient, human_size
 from app.core.types import BackendError
 from app.ui.dialogs import open_url, show_error
+from app.ui.i18n import localize_widget_tree
 from app.ui.services import AppServices
 from app.ui.theme import current_palette
 from app.ui.widgets import (
@@ -507,6 +508,7 @@ class DiscoverPage(QWidget):
                 f"{len(models)} GGUF repositories" if models else "No models found."
             )
             self.load_more_button.setVisible(len(models) >= self._limit)
+            localize_widget_tree(self)
 
         def failed(message, detail):
             self._searching = False
@@ -522,6 +524,7 @@ class DiscoverPage(QWidget):
             )
             self.search_status.setToolTip(detail)
             self.show_status_message.emit(message)
+            localize_widget_tree(self)
 
         self._run_task(work, done, failed)
 
@@ -680,6 +683,7 @@ class DiscoverPage(QWidget):
                 "This repository has no GGUF files visible. It may be gated or use a "
                 "different format."
             )
+        localize_widget_tree(self)
 
     def _populate_files(self, details: HFRepoDetails) -> None:
         self.file_table.setRowCount(0)
@@ -715,6 +719,7 @@ class DiscoverPage(QWidget):
             )
         else:
             self.download_button.setText("Download selected file")
+        localize_widget_tree(self)
 
     def _selected_file(self):
         if self._details is None:
@@ -832,6 +837,7 @@ class DiscoverPage(QWidget):
                 )
                 self._download_rows[task.id] = row
             row.update_task(task)
+        localize_widget_tree(self)
         for task_id in list(self._download_rows):
             if task_id not in seen:
                 row = self._download_rows.pop(task_id)
@@ -875,4 +881,3 @@ class DiscoverPage(QWidget):
     def shutdown(self) -> None:
         self._poll_timer.stop()
         self.downloads.shutdown()
-
