@@ -472,6 +472,10 @@ class DiscoverPage(QWidget):
             self._initial_search_done = True
             QTimer.singleShot(250, self.search)
 
+    def disable_automatic_search(self) -> None:
+        """Keep headless/package smoke checks independent of network access."""
+        self._initial_search_done = True
+
     def search(self, *_args) -> None:
         if self._searching:
             # Keep the latest user intent. The current Hub request cannot be
