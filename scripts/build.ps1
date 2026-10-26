@@ -46,6 +46,10 @@ Write-Host "Building with PyInstaller..."
 if (-not $?) { throw "PyInstaller failed." }
 
 $Dist = Join-Path $Root "dist\KestrelStudio"
+$QtPlatformPlugin = Get-ChildItem -LiteralPath $Dist -Recurse -Filter "qwindows.dll" -File | Select-Object -First 1
+if (-not $QtPlatformPlugin) {
+   throw "PySide6 Windows platform plugin (qwindows.dll) is missing from the packaged application."
+}
 if (Test-Path -LiteralPath "runtime") {
    Write-Host "Copying llama.cpp runtime next to the executable..."
    Copy-Item -Recurse -Force "runtime" (Join-Path $Dist "runtime")
@@ -56,3 +60,4 @@ Copy-Item -Force "LICENSE" (Join-Path $Dist "LICENSE")
 Write-Host ""
 Write-Host "Build complete: $Dist\KestrelStudio.exe"
 Write-Host "Optional runtime: .venv\Scripts\python.exe scripts\fetch_llama_cpp.py --backend cpu"
+

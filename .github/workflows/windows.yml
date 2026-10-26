@@ -23,17 +23,36 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Run tests
         run: python -m pytest -q
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
       - name: Build Windows app
         shell: pwsh
         run: ./scripts/build.ps1 -SkipTests
-      - name: Package distributable folder
+      - name: Verify frozen GUI startup and Qt plugins
         shell: pwsh
-        run: Compress-Archive -Path dist/KestrelStudio/* -DestinationPath KestrelStudio-Windows-x64.zip -CompressionLevel Optimal
-      - name: Upload build artifact
+        run: |
+          $dist = "dist/KestrelStudio"
+          $windowsPlugin = Get-ChildItem -LiteralPath $dist -Recurse -Filter qwindows.dll -File | Select-Object -First 1
+          $offscreenPlugin = Get-ChildItem -LiteralPath $dist -Recurse -Filter qoffscreen.dll -File | Select-Object -First 1
+          if (-not $windowsPlugin) { throw "PySide6 qwindows.dll is missing from the bundle." }
+          if (-not $offscreenPlugin) { throw "PySide6 qoffscreen.dll is missing from the bundle." }
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $env:KESTREL_CONFIG_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-smoke-config"
+          $env:KESTREL_DATA_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-smoke-data"
+          & "$dist/KestrelStudio.exe" --smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "Packaged GUI smoke test failed with exit code $LASTEXITCODE." }
+          $log = Join-Path $env:KESTREL_DATA_DIR "logs/kestrel.log"
+          if (-not (Test-Path -LiteralPath $log)) { throw "Packaged GUI did not create its startup log." }
+          if ((Get-Content -Raw -LiteralPath $log) -notmatch "smoke test: all pages created") { throw "Packaged GUI did not finish the startup smoke test." }
+      - name: Build Windows setup executable
+        shell: pwsh
+        run: ./scripts/build-installer.ps1 -SkipBuild
+      - name: Upload setup executable
         uses: actions/upload-artifact@v4
         with:
-          name: KestrelStudio-Windows-x64
-          path: KestrelStudio-Windows-x64.zip
+          name: KestrelStudio-Setup-x64
+          path: dist/installer/KestrelStudio-Setup-x64.exe
           if-no-files-found: error
 
   release:
@@ -45,15 +64,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: KestrelStudio-Windows-x64
-      - name: Publish GitHub release asset
+          name: KestrelStudio-Setup-x64
+          path: release
+      - name: Publish GitHub release setup executable
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.1' }}
-          name: Kestrel Studio ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.1' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.2' }}
+          name: Kestrel Studio ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v0.1.2' }}
           target_commitish: main
           body: |
-            Windows x64 release of Kestrel Studio with improved Hugging Face GGUF search.
+            Windows x64 setup for Kestrel Studio. Run the installer and follow the setup wizard. It installs the complete application bundle, including the Qt platform plugins required to start the GUI.
 
-            Download `KestrelStudio-Windows-x64.zip`, extract it, then run `KestrelStudio.exe`.
-          files: KestrelStudio-Windows-x64.zip
+            This release is a setup executable; do not extract or run the app executable by itself.
+          files: release/KestrelStudio-Setup-x64.exe
+

@@ -10,7 +10,7 @@ from pathlib import Path
 APP_NAME = "Kestrel Studio"
 APP_SHORT_NAME = "Kestrel"
 APP_ID = "KestrelStudio"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.2"
 APP_ORG = "Kestrel"
 APP_DESCRIPTION = "Local GGUF models and cloud providers in one desktop studio"
 APP_WEBSITE = "https://github.com/"
@@ -76,3 +76,4 @@ def assets_dir() -> Path:
         if candidate.exists():
             return candidate
     return Path(__file__).resolve().parent.parent / ASSETS_DIRNAME
+

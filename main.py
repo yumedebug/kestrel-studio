@@ -248,7 +248,6 @@ def main(argv: list[str] | None = None) -> int:
                     window.switch_page(key)
                     app.processEvents()
                 log.info("smoke test: all pages created")
-                print("KESTREL_SMOKE_OK", flush=True)
                 window.close()
                 QTimer.singleShot(150, app.quit)
 
@@ -272,3 +271,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

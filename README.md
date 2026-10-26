@@ -97,16 +97,18 @@ $env:QT_QPA_PLATFORM = 'offscreen'
 
 スモークチェックはすべてのメインページを構築し、クリーンに終了する。クラウドプロバイダーへの接続や、実際のGGUFモデルのロードは行わない。クラウド推論、プロバイダー認証、Hugging Faceのダウンロード、llama.cppのCPU/GPU推論、実際にロードしたモデルへのAPIリクエストには、認証情報・ネットワーク・ランタイム・モデルが必要であり、このスモークチェックでは検証されない。
 
-## Windowsビルド
+## Windowsビルドとインストーラー
 
-PyInstallerによる1フォルダ配布物をビルドする:
+Windows用のインストーラーをビルドするには、先に[Inno Setup](https://jrsoftware.org/isinfo.php)をインストールし、プロジェクトルートで以下を実行する:
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\scripts\build.ps1
+.\scripts\build-installer.ps1
 ```
 
-出力: `dist\KestrelStudio\KestrelStudio.exe`。任意のllama.cppランタイムを含めるには、パッケージングの前にビルドの `runtime` ディレクトリへ配置するか、ビルド後に取得スクリプトを使って `dist\KestrelStudio\runtime` へ取得する。GPUビルドはシステムのNVIDIAドライバーやCUDAランタイムコンポーネントに依存する場合がある。CPUバックエンドが互換性重視の選択肢になる。
+出力は `dist\installer\KestrelStudio-Setup-x64.exe`。セットアップは必要なPySide6 DLLとQtプラグインを含む完全なアプリ一式を、現在のユーザーのLocalAppData Programsフォルダーに配置し、スタートメニューのショートカットを作成する。別のPCではSetup.exeを実行すること。 `KestrelStudio.exe` だけをコピーしても、隣接する `_internal` ランタイムファイルが必要なため起動できない。
+
+GitHub Actionsは `qwindows.dll` と `qoffscreen.dll` の同梱を確認し、配布ビルドのGUIスモークテストを実行してからセットアップを作成する。任意のllama.cppランタイムを同梱するには、ビルド前に `runtime` フォルダーへ配置するか、ビルド後に取得スクリプトで `dist\KestrelStudio\runtime` へ取得する。GPUビルドはNVIDIAドライバーやCUDAランタイムに依存する場合があり、CPUバックエンドが互換性重視の選択肢になる。
 
 ## データとプライバシー
 
@@ -123,7 +125,7 @@ PyInstallerによる1フォルダ配布物をビルドする:
 
 ## サードパーティソフトウェア
 
-ランタイム依存関係は `requirements.txt` に宣言されている（PySide6、FastAPI、Uvicorn、httpx、huggingface_hub）。開発/ビルド依存関係は `requirements-dev.txt` にある（pytest、pytest-qt、PyInstaller）。再配布や使用の前に、各依存関係のライセンスと、llama.cpp/GGUFモデルのライセンスを確認すること。モデルのライセンスとプロバイダーの規約は、このアプリとは別物。
+ランタイム依存関係は `requirements.txt` に宣言されている（PySide6、FastAPI、Uvicorn、httpx、huggingface_hub）。開発/ビルド依存関係は `requirements-dev.txt` にある（pytest、pytest-qt、PyInstaller）。WindowsセットアップはInno Setupを使って生成する。再配布や使用の前に、各依存関係のライセンスと、llama.cpp/GGUFモデルのライセンスを確認すること。モデルのライセンスとプロバイダーの規約は、このアプリとは別物。
 
 ## オープンソースとしての公開
 
@@ -137,6 +139,6 @@ git remote add origin https://github.com/<OWNER>/<REPOSITORY>.git
 git push -u origin main
 ```
 
-`.github/workflows/windows.yml` のGitHub Actionsワークフローは、pushとpull requestの際にテストスイートを実行し、Windows x64 ZIPをビルドする。リポジトリをpushした後にGitHub Releaseを公開するには、`v0.1.0` のようなバージョンタグをpushする。ワークフローが `KestrelStudio-Windows-x64.zip` をリリースに添付する。
+`.github/workflows/windows.yml` のGitHub Actionsワークフローは、テスト、PyInstallerで固めたGUIの起動検証、Windows x64セットアップの作成を行う。`v0.1.2` のようなバージョンタグをpushすると、`KestrelStudio-Setup-x64.exe` をGitHub Releaseに添付する。
 
 バイナリ配布物はCIで生成され、意図的にGitからは除外されている。再配布の前に、モデル、プロバイダー、依存関係、llama.cppのライセンスを個別に確認すること。
