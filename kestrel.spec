@@ -4,6 +4,13 @@
 from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = [
+    # MainWindow registers these pages from its navigation table at runtime.
+    # Keep them explicit so a clean PyInstaller build cannot omit a screen.
+    "app.ui.chat",
+    "app.ui.discover",
+    "app.ui.models",
+    "app.ui.server",
+    "app.ui.settings",
     "uvicorn.logging",
     "uvicorn.loops.auto",
     "uvicorn.protocols.http.auto",
@@ -86,3 +93,4 @@ coll = COLLECT(
     upx_exclude=[],
     name="KestrelStudio",
 )
+

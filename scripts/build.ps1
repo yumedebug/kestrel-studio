@@ -42,7 +42,7 @@ if (-not $SkipTests) {
 }
 
 Write-Host "Building with PyInstaller..."
-& $Python -m PyInstaller --noconfirm kestrel.spec
+& $Python -m PyInstaller --clean --noconfirm kestrel.spec
 if (-not $?) { throw "PyInstaller failed." }
 
 $Dist = Join-Path $Root "dist\KestrelStudio"
