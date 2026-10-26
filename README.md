@@ -1,24 +1,24 @@
 # Kestrel Studio
 
-Kestrel Studio is a Windows desktop app for managing GGUF models and connecting to hosted AI providers. Its original interface uses a light-first, restrained palette, clear type hierarchy, and generous spacing; it is not affiliated with or a copy of another desktop product. It does not require a local model to start. Cloud inference sends prompts to the provider you configure, so an internet connection, provider account, API key, and any applicable billing are required. The app does not include API credits.
+Kestrel Studioは、GGUFモデルの管理とホスト型AIプロバイダーへの接続を行うWindowsデスクトップアプリ。そのオリジナルのインターフェースは、ライトテーマを基本とした落ち着いた配色、明確な文字の階層、ゆったりした余白を特徴とし、他のデスクトップ製品と提携しているわけでも、そのコピーでもない。開始にあたってローカルモデルは不要。クラウド推論は設定したプロバイダーにプロンプトを送信するため、インターネット接続、プロバイダーのアカウント、APIキー、そして必要に応じた課金が求められる。アプリにAPIクレジットは含まれていない。
 
-## Current scope
+## 現在の実装範囲
 
-The desktop shell, dark/light UI, settings, model library, GGUF metadata reader, Hugging Face discovery/download flow, llama.cpp process backend, SQLite chat history, cloud-provider backend, and OpenAI-compatible local HTTP server are implemented. The cloud backend supports OpenAI, Anthropic Messages, Gemini, and OpenAI-compatible endpoints including OpenRouter, Groq, Mistral, DeepSeek, xAI, Together AI, Ollama, LM Studio, and custom servers. Model lists are starting suggestions; provider model IDs and compatible base URLs can be edited in Settings.
+デスクトップシェル、ダーク/ライトUI、設定、モデルライブラリ、GGUFメタデータリーダー、Hugging Faceの検索/ダウンロードフロー、llama.cppプロセスバックエンド、SQLiteチャット履歴、クラウドプロバイダーバックエンド、OpenAI互換のローカルHTTPサーバーが実装済み。クラウドバックエンドは、OpenAI、Anthropic Messages、Geminiに加え、OpenRouter、Groq、Mistral、DeepSeek、xAI、Together AI、Ollama、LM Studio、カスタムサーバーを含むOpenAI互換エンドポイントに対応する。モデルリストは初期候補であり、プロバイダーのモデルIDや互換ベースURLは設定で編集できる。
 
-Chat is included in the current app. This workstation has no configured provider key or model credentials, so a real provider response was not verified here. API keys are never bundled; enter your own in Settings → Cloud Providers. On Windows, secrets use Windows Credential Manager (with an encrypted DPAPI fallback where Credential Manager is unavailable).
+チャットは現在のアプリに含まれている。このワークステーションにはプロバイダーのキーやモデルの認証情報が設定されていないため、実際のプロバイダー応答はここでは検証されていない。APIキーは同梱されないため、自分のキーを Settings → Cloud Providers で入力すること。Windowsでは、シークレットはWindows資格情報マネージャー（利用できない環境ではDPAPIで暗号化したフォールバック）を使用する。
 
-## Requirements
+## 動作要件
 
-- Windows 10 or 11, 64-bit
-- Python 3.12 for development (the project currently uses Python 3.12.10)
-- Internet access for cloud inference, Hugging Face downloads, dependency installation, and optional llama.cpp runtime download
+- Windows 10または11、64ビット
+- 開発にはPython 3.12（プロジェクトは現在Python 3.12.10を使用）
+- クラウド推論、Hugging Faceのダウンロード、依存関係のインストール、任意のllama.cppランタイムのダウンロードにはインターネットアクセスが必要
 
-No browser, Electron, or WebView UI is used. Local inference does not require a hosted AI service, but it requires a compatible llama.cpp runtime and a suitable GGUF model.
+ブラウザ、Electron、WebViewのUIは使用していない。ローカル推論にホスト型AIサービスは不要だが、互換性のあるllama.cppランタイムと適切なGGUFモデルが必要になる。
 
-## Setup and launch
+## セットアップと起動
 
-From PowerShell:
+PowerShellで実行する:
 
 ```powershell
 cd C:\path\to\localapp
@@ -27,107 +27,107 @@ py -3.12 -m venv .venv
 .venv\Scripts\python.exe main.py
 ```
 
-The first launch creates app settings and data under the Windows user application-data directory. For development, set `KESTREL_CONFIG_DIR` and `KESTREL_DATA_DIR` to temporary folders to isolate data. Run `main.py --version` to print the version.
+初回起動時に、Windowsのユーザーアプリケーションデータディレクトリ配下にアプリの設定とデータが作成される。開発時は、環境変数 `KESTREL_CONFIG_DIR` と `KESTREL_DATA_DIR` を一時フォルダに設定するとデータを分離できる。バージョンを表示するには `main.py --version` を実行する。
 
-## Configure a cloud provider
+## クラウドプロバイダーの設定
 
-1. Start the app and open **Settings → Cloud Providers**.
-2. Choose a provider, enter its API key, and save it. Use **Test Connection** where available to fetch the provider's model list.
-3. Select or enter the exact model ID shown by that provider.
-4. Use **Load Cloud Model** in Chat (or the model selector) to activate it.
+1. アプリを起動し、**Settings → Cloud Providers** を開く。
+2. プロバイダーを選び、APIキーを入力して保存する。利用可能な場合は **Test Connection** を使ってプロバイダーのモデルリストを取得する。
+3. そのプロバイダーが表示する正確なモデルIDを選択または入力する。
+4. チャットの **Load Cloud Model**（またはモデルセレクター）を使って有効化する。
 
-API keys are stored per Windows user in the OS credential store, not in settings JSON. Provider controls only send generation options that the selected API supports. For a custom OpenAI-compatible endpoint, enter its base URL (normally ending in `/v1`), model ID, and optional key. Refer to each provider's own terms, model availability, and pricing.
+APIキーは設定JSONではなく、WindowsユーザーごとにOSの資格情報ストアに保存される。プロバイダー側の制御では、選択したAPIがサポートする生成オプションのみを送信する。カスタムのOpenAI互換エンドポイントでは、ベースURL（通常は `/v1` で終わる）、モデルID、任意のキーを入力する。各プロバイダーの規約、モデルの提供状況、料金については各自で確認すること。
 
-Supported provider API styles:
+対応するプロバイダーAPIスタイル:
 
-- OpenAI Chat Completions: OpenAI, OpenRouter, Groq, Mistral, DeepSeek, xAI, Together AI, Ollama, LM Studio, and custom compatible endpoints.
-- Anthropic Messages API: Anthropic.
-- Gemini generate-content streaming API: Google Gemini.
+- OpenAI Chat Completions: OpenAI、OpenRouter、Groq、Mistral、DeepSeek、xAI、Together AI、Ollama、LM Studio、カスタム互換エンドポイント。
+- Anthropic Messages API: Anthropic。
+- Gemini generate-content ストリーミングAPI: Google Gemini。
 
-Model IDs and availability change over time. Treat the in-app suggestions as editable convenience values and use the provider's current documentation/dashboard to verify the ID and endpoint. This app makes direct requests to each configured provider; third-party compatible providers use their own service.
+モデルIDと提供状況は時間とともに変化する。アプリ内の候補は編集可能な便宜上の値として扱い、プロバイダーの最新のドキュメント/ダッシュボードでIDとエンドポイントを確認すること。このアプリは、設定された各プロバイダーへ直接リクエストを行う。サードパーティの互換プロバイダーは、それぞれ独自のサービスを使用する。
 
-## Local GGUF models
+## ローカルのGGUFモデル
 
-Use Discover to search Hugging Face for GGUF repositories, inspect files, and download a selected file, or use **Add Model** to register an existing GGUF. To run locally, install an official llama.cpp Windows x64 runtime as described below, then select the model and load it. Local inference runs through llama.cpp; no provider API key is used for local prompts.
+Discoverを使ってHugging FaceのGGUFリポジトリを検索し、ファイルを閲覧して選択したファイルをダウンロードするか、**Add Model** で既存のGGUFを登録する。ローカルで実行するには、後述の方法で公式のllama.cpp Windows x64ランタイムをインストールし、モデルを選択してロードする。ローカル推論はllama.cpp経由で動作し、ローカルのプロンプトにプロバイダーのAPIキーは使用されない。
 
-Download the official runtime from the llama.cpp GitHub releases:
+公式ランタイムはllama.cppのGitHubリリースからダウンロードする:
 
 ```powershell
 .venv\Scripts\python.exe scripts\fetch_llama_cpp.py --backend cpu
-# Optional NVIDIA build (requires a compatible CUDA installation/runtime):
+# 任意のNVIDIAビルド（互換性のあるCUDAインストール/ランタイムが必要）:
 .venv\Scripts\python.exe scripts\fetch_llama_cpp.py --backend cuda --cuda-version 12.4
 ```
 
-The fetch script selects official `ggml-org/llama.cpp` Windows x64 release assets and verifies a published SHA-256 digest when one is provided. GPU runtime compatibility depends on the installed driver and the chosen release. CPU is the fallback.
+取得スクリプトは公式の `ggml-org/llama.cpp` のWindows x64リリースアセットを選択し、公開されたSHA-256ダイジェストが提供されている場合はそれを検証する。GPUランタイムの互換性は、インストールされているドライバーと選択したリリースに依存する。CPUがフォールバックになる。
 
-## Local Server API
+## ローカルサーバーAPI
 
-The embedded FastAPI/Uvicorn server defaults to `127.0.0.1:1234`. Start it from **Local Server** after loading a model. By default it only listens on loopback; enabling external access is an explicit setting. The GUI chat and HTTP API share the same inference manager and loaded backend.
+組み込みのFastAPI/Uvicornサーバーは、デフォルトで `127.0.0.1:1234` を使用する。モデルをロードした後、**Local Server** から起動する。デフォルトではループバックでのみ待ち受け、外部アクセスの有効化は明示的な設定になっている。GUIチャットとHTTP APIは、同じ推論マネージャーとロード済みバックエンドを共有する。
 
-Implemented routes:
+実装済みのルート:
 
 - `GET /v1/models`
-- `POST /v1/chat/completions` (non-streaming and SSE streaming)
-- `POST /v1/completions` (documented supported subset)
+- `POST /v1/chat/completions`（非ストリーミングとSSEストリーミング）
+- `POST /v1/completions`（ドキュメントに記載された対応サブセット）
 - `GET /health`
 
-Example:
+例:
 
 ```powershell
 $body = @{ model = "<loaded-model-id>"; messages = @(@{ role = "user"; content = "Hello" }) } | ConvertTo-Json -Depth 6
 Invoke-RestMethod http://127.0.0.1:1234/v1/chat/completions -Method Post -ContentType 'application/json' -Body $body
 ```
 
-The server reports unsupported request features instead of claiming to implement them. For remote API users, use the provider's endpoint directly; this local server is intended to expose the currently loaded model.
+サーバーは、対応していないリクエスト機能を実装しているふりはせず、その旨を報告する。リモートAPIの利用者は、プロバイダーのエンドポイントを直接使用すること。このローカルサーバーは、現在ロードされているモデルを公開するためのもの。
 
-## Tests and checks
+## テストとチェック
 
-Run the automated suite:
+自動テストスイートを実行する:
 
 ```powershell
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-Run a headless GUI startup/page-construction smoke check:
+ヘッドレスでのGUI起動/ページ構築スモークチェックを実行する:
 
 ```powershell
 $env:QT_QPA_PLATFORM = 'offscreen'
 .venv\Scripts\python.exe main.py --smoke-test
 ```
 
-The smoke check creates every main page and shuts down cleanly; it does not contact cloud providers or load a real GGUF model. Cloud inference, provider authentication, Hugging Face downloads, llama.cpp CPU/GPU inference, and API requests against a real loaded model require credentials/network/runtime/model and were not verified by that smoke check.
+スモークチェックはすべてのメインページを構築し、クリーンに終了する。クラウドプロバイダーへの接続や、実際のGGUFモデルのロードは行わない。クラウド推論、プロバイダー認証、Hugging Faceのダウンロード、llama.cppのCPU/GPU推論、実際にロードしたモデルへのAPIリクエストには、認証情報・ネットワーク・ランタイム・モデルが必要であり、このスモークチェックでは検証されない。
 
-## Windows build
+## Windowsビルド
 
-Build a one-folder PyInstaller distribution:
+PyInstallerによる1フォルダ配布物をビルドする:
 
 ```powershell
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\scripts\build.ps1
 ```
 
-Output: `dist\KestrelStudio\KestrelStudio.exe`. Include the optional llama.cpp runtime by placing it in the build's `runtime` directory before packaging, or run the fetch script into `dist\KestrelStudio\runtime` after the build. A GPU build may depend on system NVIDIA drivers and CUDA runtime components; the CPU backend is the compatibility option.
+出力: `dist\KestrelStudio\KestrelStudio.exe`。任意のllama.cppランタイムを含めるには、パッケージングの前にビルドの `runtime` ディレクトリへ配置するか、ビルド後に取得スクリプトを使って `dist\KestrelStudio\runtime` へ取得する。GPUビルドはシステムのNVIDIAドライバーやCUDAランタイムコンポーネントに依存する場合がある。CPUバックエンドが互換性重視の選択肢になる。
 
-## Data and privacy
+## データとプライバシー
 
-Settings, model library metadata, logs, and SQLite chat history stay in the local Windows user data directories. Prompts are sent to the selected cloud provider only when cloud inference is selected; provider privacy, retention, and data processing are governed by that provider. Hugging Face credentials and provider keys are stored in Windows secure credential storage where supported. Do not put API keys in issue reports or logs.
+設定、モデルライブラリのメタデータ、ログ、SQLiteのチャット履歴は、ローカルのWindowsユーザーデータディレクトリに保持される。プロンプトは、クラウド推論が選択された場合にのみ、選択中のクラウドプロバイダーへ送信される。プロバイダーにおけるプライバシー、保持、データ処理は、そのプロバイダーの取り決めに準ずる。Hugging Faceの認証情報とプロバイダーのキーは、対応している場合はWindowsの安全な資格情報ストレージに保存される。APIキーをIssue報告やログに含めないこと。
 
-## Known limits
+## 既知の制限
 
-- Provider model suggestions can become stale; refresh the list or enter the current model ID manually.
-- Provider-specific APIs do not share exactly the same generation options or response features. Unsupported capabilities are omitted or reported as errors.
-- Cloud calls require a valid key, network access, and provider-side access/billing.
-- Real-model loading and GPU support depend on model size, available memory, llama.cpp build, and drivers. This PC validation used no real model.
-- The Hugging Face downloader and cloud integrations require live network access and credentials where applicable.
-- PyInstaller and the optional llama.cpp runtime need a Windows build environment for a distributable Windows package.
+- プロバイダーのモデル候補は古くなることがある。リストを更新するか、現在のモデルIDを手動で入力すること。
+- プロバイダー固有のAPI同士では、生成オプションや応答機能が完全に同じわけではない。対応していない機能は省略されるか、エラーとして報告される。
+- クラウド呼び出しには、有効なキー、ネットワークアクセス、プロバイダー側のアクセス/課金が必要。
+- 実モデルのロードとGPUサポートは、モデルサイズ、利用可能なメモリ、llama.cppのビルド、ドライバーに依存する。このPCでの検証では実モデルは使用していない。
+- Hugging Faceダウンローダーとクラウド連携には、実際のネットワークアクセスと、必要に応じて認証情報が必要。
+- PyInstallerと任意のllama.cppランタイムには、配布可能なWindowsパッケージのためにWindowsビルド環境が必要。
 
-## Third-party software
+## サードパーティソフトウェア
 
-Runtime dependencies are declared in `requirements.txt` (PySide6, FastAPI, Uvicorn, httpx, and huggingface_hub). Development/build dependencies are in `requirements-dev.txt` (pytest, pytest-qt, and PyInstaller). Review each dependency's license and the llama.cpp/GGUF model license before redistribution or use. Model licenses and provider terms are separate from this app.
+ランタイム依存関係は `requirements.txt` に宣言されている（PySide6、FastAPI、Uvicorn、httpx、huggingface_hub）。開発/ビルド依存関係は `requirements-dev.txt` にある（pytest、pytest-qt、PyInstaller）。再配布や使用の前に、各依存関係のライセンスと、llama.cpp/GGUFモデルのライセンスを確認すること。モデルのライセンスとプロバイダーの規約は、このアプリとは別物。
 
-## Open-source release
+## オープンソースとしての公開
 
-This repository is licensed under the MIT License. To publish the source, create an empty public repository on GitHub, then run the following from the project root (replace the owner/repository URL):
+このリポジトリはMITライセンスの下でライセンスされている。ソースを公開するには、GitHub上に空の公開リポジトリを作成し、プロジェクトルートから以下を実行する（オーナー/リポジトリのURLは置き換えること）:
 
 ```powershell
 git init -b main
@@ -137,6 +137,6 @@ git remote add origin https://github.com/<OWNER>/<REPOSITORY>.git
 git push -u origin main
 ```
 
-The GitHub Actions workflow at `.github/workflows/windows.yml` runs the test suite and builds a Windows x64 ZIP for pushes and pull requests. To publish a GitHub Release after pushing the repository, push a version tag such as `v0.1.0`; the workflow attaches `KestrelStudio-Windows-x64.zip` to the release.
+`.github/workflows/windows.yml` のGitHub Actionsワークフローは、pushとpull requestの際にテストスイートを実行し、Windows x64 ZIPをビルドする。リポジトリをpushした後にGitHub Releaseを公開するには、`v0.1.0` のようなバージョンタグをpushする。ワークフローが `KestrelStudio-Windows-x64.zip` をリリースに添付する。
 
-The binary distribution is generated by CI and is intentionally excluded from Git. Review model, provider, dependency, and llama.cpp licenses independently before redistributing them.
+バイナリ配布物はCIで生成され、意図的にGitからは除外されている。再配布の前に、モデル、プロバイダー、依存関係、llama.cppのライセンスを個別に確認すること。
