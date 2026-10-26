@@ -21,7 +21,7 @@ No browser, Electron, or WebView UI is used. Local inference does not require a 
 From PowerShell:
 
 ```powershell
-cd C:\Users\g0738\Desktop\localapp
+cd C:\path\to\localapp
 py -3.12 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .venv\Scripts\python.exe main.py

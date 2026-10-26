@@ -1,0 +1,1 @@
+"""Qt-free application services."""
