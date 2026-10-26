@@ -40,7 +40,8 @@ jobs:
           $env:QT_QPA_PLATFORM = "offscreen"
           $env:KESTREL_CONFIG_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-smoke-config"
           $env:KESTREL_DATA_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-smoke-data"
-          & "$dist/KestrelStudio.exe" --smoke-test
+          $process = Start-Process -FilePath "$dist/KestrelStudio.exe" -ArgumentList "--smoke-test" -PassThru -Wait -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw "Packaged GUI smoke test exited with code $($process.ExitCode)." }
           $log = Join-Path $env:KESTREL_DATA_DIR "logs/kestrel.log"
           if (-not (Test-Path -LiteralPath $log)) { throw "Packaged GUI did not create its startup log." }
           $smokeLog = Get-Content -Raw -LiteralPath $log
