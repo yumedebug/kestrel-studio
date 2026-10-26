@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 9122)
-Total output lines: 878
-
 """Discover page: Hugging Face GGUF search, file listing and downloads."""
 
 from __future__ import annotations
@@ -427,7 +424,19 @@ class DiscoverPage(QWidget):
         details_layout.addLayout(save_row)
         details_layout.addWidget(self.download_button)
         splitter.addWidget(details_card)
-        splitt…122 tokens truncated…ads_summary = muted_label("No active downloads")
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 3)
+        splitter.setSizes([360, 640])
+        layout.addWidget(splitter, 1)
+
+        # Downloads panel.
+        downloads_card = Card(soft=True)
+        downloads_layout = QVBoxLayout(downloads_card)
+        downloads_layout.setContentsMargins(12, 8, 12, 8)
+        downloads_layout.setSpacing(5)
+        downloads_header = QHBoxLayout()
+        downloads_header.addWidget(section_title("Downloads"))
+        self.downloads_summary = muted_label("No active downloads")
         self.downloads_summary.setWordWrap(False)
         self.downloads_summary.setStyleSheet("font-size: 8.5pt;")
         downloads_header.addWidget(self.downloads_summary)

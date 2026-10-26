@@ -26,7 +26,7 @@ from app.constants import APP_NAME, APP_VERSION
 from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, LoadResult, ModelTarget
 from app.ui.chat import ChatPage
-from app.ui.discover import DiscoverPage
+from app.ui.hf_discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
 from app.ui.icons import app_icon, make_icon
 from app.ui.models import ModelsPage
