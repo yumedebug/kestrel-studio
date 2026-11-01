@@ -35,6 +35,7 @@ DEFAULTS: dict[str, Any] = {
         "cpu_threads": 0,  # 0 = automatic
         "gpu_layers": 0,  # 0 = CPU, 999 = all layers
         "batch_size": 512,
+        "flash_attention": False,
         "backend": "auto",  # auto | cpu | cuda | vulkan
         "auto_cpu_fallback": True,
         "llama_server_path": "",
@@ -117,6 +118,7 @@ _BOOLS = {
     "inference.auto_cpu_fallback",
     "server.auto_start",
     "server.allow_external",
+    "inference.flash_attention",
     "agent.show_command_output",
     "agent.save_command_history",
     "agent.full_access",

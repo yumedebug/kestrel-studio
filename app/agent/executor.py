@@ -131,6 +131,21 @@ class ToolExecutor:
             )
             return request, ("", "", "")
 
+        if spec.kind == "web_search":
+            from app.agent.web_search import search_target
+
+            request = ActionRequest(
+                kind="web_search",
+                description=spec.description,
+                cwd=workspace,
+                purpose=spec.name,
+                target=search_target(),
+                task_id=context.task_id,
+                source=context.source,
+                mode=context.mode,
+            )
+            return request, ("", "", "")
+
         request = ActionRequest(
             kind=spec.kind,
             description=spec.description,
@@ -141,6 +156,12 @@ class ToolExecutor:
             source=context.source,
             mode=context.mode,
         )
+        if spec.kind == "computer":
+            request = replace(
+                request,
+                description=spec.description,
+                target=str(arguments.get("target") or spec.name),
+            )
         return request, ("", "", "")
 
     # -- execution ---------------------------------------------------------
@@ -170,7 +191,7 @@ class ToolExecutor:
             )
         # Plan mode is strictly read-only and chat mode runs no tools at all.
         if mode == "chat" or (
-            mode == "plan" and spec.kind not in {"read", "system", "memory"}
+            mode == "plan" and spec.kind not in {"read", "system", "memory", "web_search"}
         ):
             return ToolResult(
                 False,
@@ -220,6 +241,8 @@ class ToolExecutor:
             store=self.store,
             memory=self.memory,
             process_manager=self.process_manager,
+            computer_use=context.computer_use,
+            performance_monitor=context.performance_monitor,
         )
         raw = self.registry.call(call, tool_context)
         result = self._to_result(raw)

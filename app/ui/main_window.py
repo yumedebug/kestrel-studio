@@ -27,11 +27,13 @@ from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, LoadResult, ModelTarget
 from app.ui.agent.agent_page import AgentPage
 from app.ui.chat import ChatPage
+from app.ui.computer_use import ComputerUsePage
 from app.ui.hf_discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
 from app.ui.icons import app_icon, make_icon
 from app.ui.i18n import localize_widget_tree
 from app.ui.models import ModelsPage
+from app.ui.performance import PerformancePage
 from app.ui.server import ServerPage
 from app.ui.settings import SettingsPage
 from app.ui.services import AppServices
@@ -45,6 +47,8 @@ log = logging.getLogger(__name__)
 NAV_PAGES: tuple[tuple[str, str, str], ...] = (
     ("chat", "チャット", "chat"),
     ("agent", "エージェント", "agent"),
+    ("computer", "Computer Use", "agent"),
+    ("performance", "性能監視", "server"),
     ("discover", "モデルを探す", "compass"),
     ("models", "モデル管理", "cube"),
     ("server", "API サーバー", "server"),
@@ -109,6 +113,8 @@ class MainWindow(QMainWindow):
         page_types = {
             "chat": ChatPage,
             "agent": AgentPage,
+            "computer": ComputerUsePage,
+            "performance": PerformancePage,
             "discover": DiscoverPage,
             "models": ModelsPage,
             "server": ServerPage,

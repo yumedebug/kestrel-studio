@@ -191,7 +191,7 @@ class LlamaCppBackend(InferenceBackend):
         gpu = int(options.gpu_layers or 0)
         threads = int(options.cpu_threads or 1)
         batch = int(options.batch_size or 512)
-        return [
+        command = [
             str(exe),
             "-m",
             str(model_path),
@@ -212,6 +212,10 @@ class LlamaCppBackend(InferenceBackend):
             "--alias",
             self._api_model,
         ]
+        if bool(self.settings.get("inference.flash_attention", False)):
+            # Optional llama.cpp optimization; omitted by default for older runtimes.
+            command.extend(["--flash-attn", "on"])
+        return command
 
     def _spawn(self, cmd: list[str], cwd: Path) -> None:
         log_path = logs_dir() / "llama-server.log"

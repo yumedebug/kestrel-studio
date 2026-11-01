@@ -3,3 +3,4 @@ fastapi==0.162.0
 uvicorn==0.54.0
 httpx==0.28.1
 huggingface_hub==2.3.0
+pywinauto==0.6.9

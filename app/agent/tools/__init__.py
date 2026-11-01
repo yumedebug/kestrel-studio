@@ -14,7 +14,9 @@ from app.agent.tools.registry import (
 
 def create_registry() -> ToolRegistry:
     """Register every built-in tool exactly once."""
-    from app.agent.tools import development, filesystem, memory_tools, system, terminal
+    from app.agent.tools import (
+        computer, development, filesystem, memory_tools, system, terminal, web_search
+    )
 
     registry = ToolRegistry()
     filesystem.register(registry)
@@ -22,6 +24,8 @@ def create_registry() -> ToolRegistry:
     terminal.register(registry)
     system.register(registry)
     memory_tools.register(registry)
+    computer.register(registry)
+    web_search.register(registry)
     return registry
 
 

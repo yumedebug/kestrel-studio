@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
 from app.core.backends.base import InferenceBackend
@@ -55,6 +56,11 @@ class InferenceManager:
         self._tokens: set[CancelToken] = set()
         self._listeners: list[Callable[[dict[str, Any]], None]] = []
         self._loaded_at: float | None = None
+        self._performance: dict[str, Any] = {
+            "tokens_per_second": None,
+            "last_inference_seconds": None,
+            "model_memory_bytes": None,
+        }
 
     # -- listeners ---------------------------------------------------------
     def add_listener(self, listener: Callable[[dict[str, Any]], None]) -> None:
@@ -99,6 +105,7 @@ class InferenceManager:
                 "kind": target.kind if target else "",
                 "provider": target.provider if target else "",
                 "backend": getattr(backend, "name", "") if backend else "",
+                "performance": dict(self._performance),
             }
             if backend is not None:
                 try:
@@ -136,6 +143,12 @@ class InferenceManager:
         with self._lock:
             if self._state == "loading":
                 return LoadResult(False, "A model is already loading. Wait for it to finish.")
+            if (
+                self._state == "ready"
+                and self._target == target
+                and self._options == options
+            ):
+                return LoadResult(True, "The requested model is already loaded.", target=target)
             self._generation += 1
             generation = self._generation
             old_backend = self._backend
@@ -203,6 +216,12 @@ class InferenceManager:
                 self._state = "ready"
                 self._warning = getattr(backend, "last_warning", "") or ""
                 self._loaded_at = time.time()
+                try:
+                    self._performance["model_memory_bytes"] = (
+                        Path(target.path).stat().st_size if target.kind == "local" and target.path else None
+                    )
+                except OSError:
+                    self._performance["model_memory_bytes"] = None
         if stale:
             try:
                 backend.unload()
@@ -302,8 +321,12 @@ class InferenceManager:
         self._notify_status()
         full = self._with_system(messages, system_prompt)
         cancelled = False
+        started = time.monotonic()
+        token_count = 0
         try:
             for event in backend.stream_chat(full, params, token):
+                if event.type == "delta":
+                    token_count += max(1, len(event.text.split()))
                 if event.type == "done" and event.finish_reason == "cancelled":
                     cancelled = True
                 if event.type == "delta" and token.is_set():
@@ -324,6 +347,10 @@ class InferenceManager:
                 detail=repr(exc),
             ) from exc
         finally:
+            elapsed = max(0.001, time.monotonic() - started)
+            with self._lock:
+                self._performance["last_inference_seconds"] = round(elapsed, 3)
+                self._performance["tokens_per_second"] = round(token_count / elapsed, 2)
             with self._lock:
                 self._tokens.discard(token)
                 self._active = max(0, self._active - 1)

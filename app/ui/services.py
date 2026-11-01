@@ -15,6 +15,7 @@ from app.core.hf_client import HuggingFaceClient
 from app.core.inference import InferenceManager
 from app.core.model_manager import ModelManager
 from app.core.settings import SettingsStore
+from app.core.performance import PerformanceMonitor
 
 
 class InferenceBridge(QObject):
@@ -46,6 +47,7 @@ class AppServices:
     downloads: DownloadManager
     inference: InferenceManager
     api_server: ApiServer
+    performance: PerformanceMonitor = field(default_factory=PerformanceMonitor)
     bridge: InferenceBridge = field(default_factory=InferenceBridge)
     _agent_store: Any = field(default=None, repr=False)
 

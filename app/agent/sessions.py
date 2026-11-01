@@ -89,6 +89,22 @@ CREATE TABLE IF NOT EXISTS agent_memories (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS computer_use_actions (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL DEFAULT '',
+    action TEXT NOT NULL,
+    target TEXT NOT NULL DEFAULT '',
+    approved INTEGER NOT NULL DEFAULT 0,
+    verified INTEGER NOT NULL DEFAULT 0,
+    details TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS performance_samples (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL DEFAULT '',
+    sample TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_agent_tasks_updated ON agent_tasks(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_messages_task ON agent_messages(task_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_agent_commands_task ON agent_commands(task_id, created_at);
@@ -361,6 +377,60 @@ class AgentStore:
 
     def delete_task(self, task_id: str) -> None:
         self.execute("DELETE FROM agent_tasks WHERE id = ?", (task_id,))
+
+    def add_computer_action(
+        self, *, task_id: str = "", action: str, target: str = "",
+        approved: bool = False, verified: bool = False, details: dict[str, Any] | None = None
+    ) -> str:
+        action_id = f"computer_{uuid.uuid4().hex}"
+        self.execute(
+            "INSERT INTO computer_use_actions "
+            "(id,task_id,action,target,approved,verified,details,created_at) VALUES (?,?,?,?,?,?,?,?)",
+            (action_id, task_id, action, target, int(approved), int(verified),
+             json.dumps(details or {}, ensure_ascii=False), utc_now()),
+        )
+        return action_id
+
+    def list_computer_actions(self, task_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
+        sql = "SELECT * FROM computer_use_actions"
+        params: tuple[Any, ...] = ()
+        if task_id:
+            sql += " WHERE task_id = ?"
+            params = (task_id,)
+        rows = self.query(sql + " ORDER BY created_at DESC LIMIT ?", (*params, int(limit)))
+        return [
+            {**dict(row), "approved": bool(row["approved"]), "verified": bool(row["verified"]),
+             "details": _json_load(row["details"], {})}
+            for row in rows
+        ]
+
+    def clear_computer_actions(self, task_id: str | None = None) -> None:
+        if task_id:
+            self.execute("DELETE FROM computer_use_actions WHERE task_id = ?", (task_id,))
+        else:
+            self.execute("DELETE FROM computer_use_actions")
+
+    def add_performance_sample(self, sample: dict[str, Any], *, task_id: str = "") -> str:
+        sample_id = f"perf_{uuid.uuid4().hex}"
+        self.execute(
+            "INSERT INTO performance_samples (id,task_id,sample,created_at) VALUES (?,?,?,?)",
+            (sample_id, task_id, json.dumps(sample, ensure_ascii=False), utc_now()),
+        )
+        return sample_id
+
+    def list_performance_samples(self, limit: int = 300) -> list[dict[str, Any]]:
+        rows = self.query(
+            "SELECT id,task_id,sample,created_at FROM performance_samples ORDER BY created_at DESC LIMIT ?",
+            (int(limit),),
+        )
+        return [
+            {"id": row["id"], "task_id": row["task_id"], "created_at": row["created_at"],
+             **_json_load(row["sample"], {})}
+            for row in rows
+        ]
+
+    def clear_performance_samples(self) -> None:
+        self.execute("DELETE FROM performance_samples")
 
     def recover_interrupted(self) -> int:
         """Mark tasks that were mid-flight when the app closed as paused.

@@ -81,6 +81,8 @@ class AgentController:
         planner: Planner,
         settings: Any,
         process_manager: Any = None,
+        computer_use: Any = None,
+        performance_monitor: Any = None,
         limits: AgentLimits | None = None,
     ):
         self.store = store
@@ -91,6 +93,8 @@ class AgentController:
         self.planner = planner
         self.settings = settings
         self.process_manager = process_manager
+        self.computer_use = computer_use
+        self.performance_monitor = performance_monitor
         self._limits = limits or AgentLimits()
         self._subagents = build_subagents(planner, permissions)
 
@@ -536,6 +540,8 @@ class AgentController:
             emit=self._output.push,
             timeout=timeout,
             save_command_history=bool(self.settings.get("agent.save_command_history", True)),
+            computer_use=self.computer_use,
+            performance_monitor=self.performance_monitor,
         )
 
     def _memory_context(self) -> str:

@@ -14,6 +14,26 @@ The **Agent** page is a three-column workspace for goal-driven tasks. It can run
 
 The permission layer classifies every proposed command and file action before execution. Read-only actions inside the workspace may run directly; writes, deletes, downloads, installs, elevation, system changes, and opaque commands require an explicit approval dialog. Installation and system-level changes always need a fresh approval, even with Full Access Mode or a stored "Always Allow" grant. Protected locations such as Windows credential stores and this app's own database are denied. A denied or timed-out approval never falls back to allow.
 
+The **Computer Use** page provides a screenshot preview and explicit, one-action-at-a-time Windows pointer/text input. Computer Use is never covered by stored grants and always shows an approval dialog. The **Performance Monitor** page samples read-only CPU, memory, disk and process metrics without requiring a background service or network access.
+
+Computer Use tools are also available to the Agent registry. On Windows they prefer
+the optional `pywinauto` UI Automation backend for window and element discovery;
+when UI Automation is unavailable, the module falls back to visible Win32 window
+enumeration and coordinate input. Agent actions use a bounded
+Observe → Act → Verify retry loop, are recorded in the agent database, and can be
+removed from the Computer Use page. Performance samples are likewise persisted.
+GPU VRAM is read from `nvidia-smi` when available, while model file size and
+inference tokens/second are reported when a model is loaded and generating.
+
+The Agent also includes an API-key-free, read-only `web_search` tool backed by the
+public DuckDuckGo HTML endpoint. It returns a bounded list of title, URL and
+snippet fields, validates HTTP(S) result URLs, limits response size and timeout,
+uses a fixed User-Agent, and rejects unsafe redirects. The first request asks for
+network approval; an optional Always Allow grant is limited to the configured
+DuckDuckGo search domain. Search is subject to the public endpoint's availability,
+rate limits, robots/service terms and result quality; no API key or paid account is
+included or required.
+
 The planner requires a working model. This workstation has no local GGUF runtime and no provider key, so the planner loop was validated with deterministic fake model responses in the test suite, not against a real LLM. Manual terminal commands, tool execution, permission checks, task persistence, and sub-agent isolation were exercised separately; review every command before approving it.
 
 ## Requirements

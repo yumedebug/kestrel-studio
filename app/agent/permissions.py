@@ -21,6 +21,7 @@ import hashlib
 import os
 from dataclasses import dataclass, field
 from typing import Any, Sequence
+from urllib.parse import urlparse
 
 from app.agent import command_classifier as classifier
 from app.agent.command_classifier import ALLOW, ASK, DENY, Classification, is_within
@@ -30,7 +31,17 @@ GRANTABLE_CATEGORIES = frozenset({"write", "delete", "execution"})
 
 #: Actions that always need a fresh, individual approval.
 ABSOLUTE_ASK_CATEGORIES = frozenset(
-    {"install", "system", "elevated", "network", "opaque", "credentials", "destructive", "self"}
+    {
+        "install",
+        "system",
+        "elevated",
+        "network",
+        "opaque",
+        "credentials",
+        "destructive",
+        "self",
+        "computer",
+    }
 )
 
 _FILE_KINDS = {"read", "write", "create_dir", "move", "delete"}
@@ -244,6 +255,24 @@ class PermissionManager:
                 "Local, read-only agent operation.",
                 request,
             )
+        elif request.kind == "computer":
+            decision = PermissionDecision(
+                ASK,
+                "computer",
+                "Computer Use always requires an individual approval.",
+                request,
+                requires_admin=False,
+                grantable=False,
+            )
+        elif request.kind == "performance":
+            decision = PermissionDecision(
+                ALLOW,
+                "read_only",
+                "Read-only local performance sampling.",
+                request,
+            )
+        elif request.kind == "web_search":
+            decision = self._evaluate_web_search(request)
         else:
             decision = self._deny(request, "unknown", f"Unknown action kind: {request.kind}")
         return self._apply_grant(decision)
@@ -344,6 +373,23 @@ class PermissionManager:
             scope=scope,
         )
 
+    def _evaluate_web_search(self, request: ActionRequest) -> PermissionDecision:
+        from app.agent.web_search import ALLOWED_SEARCH_HOSTS
+
+        host = (urlparse(request.target).hostname or "").casefold()
+        if host not in ALLOWED_SEARCH_HOSTS:
+            return self._deny(
+                request, "network", "Only the configured public search endpoint is allowed."
+            )
+        return PermissionDecision(
+            ASK,
+            "network",
+            f"Read-only web search to {host} requires network approval.",
+            request,
+            grantable=True,
+            scope=host,
+        )
+
     @staticmethod
     def _deny(request: ActionRequest, category: str, reason: str) -> PermissionDecision:
         return PermissionDecision(DENY, category, reason, request)
@@ -356,6 +402,8 @@ class PermissionManager:
             if decision.classification is not None:
                 program = decision.classification.program
             return program.casefold()
+        if request.kind == "web_search":
+            return (urlparse(request.target).hostname or "").casefold()
         return ""
 
     def _grant_scope(self, decision: PermissionDecision) -> str:
@@ -369,7 +417,13 @@ class PermissionManager:
     def _apply_grant(self, decision: PermissionDecision) -> PermissionDecision:
         if decision.decision != ASK or not decision.grantable:
             return decision
-        if decision.category in ABSOLUTE_ASK_CATEGORIES or decision.requires_admin:
+        if (
+            decision.requires_admin
+            or (
+                decision.category in ABSOLUTE_ASK_CATEGORIES
+                and decision.request.kind != "web_search"
+            )
+        ):
             return decision
         scope = self._grant_scope(decision)
         target = self._grant_target(decision)
@@ -416,7 +470,10 @@ class PermissionManager:
             )
         if decision.decision != ASK or not decision.grantable:
             raise PermissionEscalationError("This action cannot be granted persistently.")
-        if decision.requires_admin or decision.category in ABSOLUTE_ASK_CATEGORIES:
+        if decision.requires_admin or (
+            decision.category in ABSOLUTE_ASK_CATEGORIES
+            and decision.request.kind != "web_search"
+        ):
             raise PermissionEscalationError("High-risk actions always need approval.")
         return self.store.add_grant(
             kind=decision.request.kind,

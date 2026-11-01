@@ -173,6 +173,8 @@ class SettingsPage(QWidget):
         self.batch_size.setRange(32, 8192)
         self.batch_size.setSingleStep(64)
         form.addRow("Batch Size", self.batch_size)
+        self.flash_attention = QCheckBox("Enable flash attention when supported by llama.cpp")
+        form.addRow("", self.flash_attention)
         self.backend_combo = QComboBox()
         self.backend_combo.addItem("Auto (CUDA → Vulkan → CPU)", "auto")
         self.backend_combo.addItem("CPU", "cpu")
@@ -482,6 +484,7 @@ class SettingsPage(QWidget):
         self.cpu_threads.setValue(int(s.get("inference.cpu_threads", 0)))
         self.gpu_layers.setValue(int(s.get("inference.gpu_layers", 0)))
         self.batch_size.setValue(int(s.get("inference.batch_size", 512)))
+        self.flash_attention.setChecked(bool(s.get("inference.flash_attention", False)))
         self._set_combo(self.backend_combo, s.get("inference.backend", "auto"))
         self.auto_fallback.setChecked(bool(s.get("inference.auto_cpu_fallback", True)))
         self.llama_path.setText(str(s.get("inference.llama_server_path", "")))
@@ -555,6 +558,7 @@ class SettingsPage(QWidget):
                     "cpu_threads": self.cpu_threads.value(),
                     "gpu_layers": self.gpu_layers.value(),
                     "batch_size": self.batch_size.value(),
+                    "flash_attention": self.flash_attention.isChecked(),
                     "backend": self.backend_combo.currentData(),
                     "auto_cpu_fallback": self.auto_fallback.isChecked(),
                     "llama_server_path": self.llama_path.text().strip(),

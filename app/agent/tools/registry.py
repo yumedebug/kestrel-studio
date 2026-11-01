@@ -15,7 +15,9 @@ Handler = Callable[[dict[str, Any], "ToolContext"], dict[str, Any]]
 CommandBuilder = Callable[[dict[str, Any], "ToolContext"], tuple[str, str, str]]
 
 FILE_KINDS = {"read", "write", "create_dir", "move", "delete"}
-ALL_KINDS = FILE_KINDS | {"command", "system", "memory"}
+ALL_KINDS = FILE_KINDS | {
+    "command", "system", "memory", "computer", "performance", "web_search"
+}
 
 
 class ToolError(RuntimeError):
@@ -71,6 +73,8 @@ class ToolContext:
     approved_command: str = ""
     approved_shell: str = ""
     approved_cwd: str = ""
+    computer_use: Any = None
+    performance_monitor: Any = None
 
     def emit_output(self, stream: str, text: str) -> None:
         if self.emit is not None:

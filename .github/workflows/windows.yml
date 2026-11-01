@@ -25,6 +25,13 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Run tests
         run: python -m pytest -q
+      - name: Run headless GUI smoke test
+        shell: pwsh
+        run: |
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $env:KESTREL_CONFIG_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-test-config"
+          $env:KESTREL_DATA_DIR = Join-Path $env:RUNNER_TEMP "KestrelStudio-test-data"
+          python main.py --smoke-test
       - name: Read application version
         id: version
         shell: pwsh

@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.agent.controller import AgentController
+from app.agent.computer_use import ComputerUse
 from app.agent.executor import ToolExecutor
 from app.agent.memory import MemoryStore
 from app.agent.permissions import ApprovalOutcome, ApprovalRequest, PermissionManager
@@ -366,6 +367,7 @@ class AgentPage(QWidget):
             process_manager=process_manager,
             settings=self.settings,
         )
+        computer_use = ComputerUse(permissions, self._approve_computer_action)
         planner = Planner(ModelClient(self.services.inference, self.settings), registry)
         controller = AgentController(
             store=self.store,
@@ -376,6 +378,8 @@ class AgentPage(QWidget):
             planner=planner,
             settings=self.settings,
             process_manager=process_manager,
+            computer_use=computer_use,
+            performance_monitor=self.services.performance,
         )
         controller.set_listener(self.bridge.event.emit)
         controller.set_broker(self.broker)
@@ -385,6 +389,17 @@ class AgentPage(QWidget):
         self._process_manager = process_manager
         self.progress.set_limits(controller.limits())
         return controller
+
+    def _approve_computer_action(self, request):
+        permissions = self._permissions
+        if permissions is None:
+            from app.agent.permissions import ApprovalOutcome
+            return ApprovalOutcome("reject", request.fingerprint())
+        decision = permissions.evaluate(request)
+        if decision.decision != "ask":
+            from app.agent.permissions import ApprovalOutcome
+            return ApprovalOutcome("reject", request.fingerprint())
+        return self.broker.request(ApprovalRequest(decision))
 
     def _workspace(self) -> str:
         text = str(self.settings.get("agent.workspace", "") or os.getcwd())
