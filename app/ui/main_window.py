@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from app.constants import APP_NAME, APP_VERSION
 from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, LoadResult, ModelTarget
+from app.ui.agent.agent_page import AgentPage
 from app.ui.chat import ChatPage
 from app.ui.hf_discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
@@ -43,6 +44,7 @@ log = logging.getLogger(__name__)
 # key, label, icon name, page class attribute
 NAV_PAGES: tuple[tuple[str, str, str], ...] = (
     ("chat", "チャット", "chat"),
+    ("agent", "エージェント", "agent"),
     ("discover", "モデルを探す", "compass"),
     ("models", "モデル管理", "cube"),
     ("server", "API サーバー", "server"),
@@ -106,6 +108,7 @@ class MainWindow(QMainWindow):
         self.pages: dict[str, QWidget] = {}
         page_types = {
             "chat": ChatPage,
+            "agent": AgentPage,
             "discover": DiscoverPage,
             "models": ModelsPage,
             "server": ServerPage,
@@ -222,6 +225,9 @@ class MainWindow(QMainWindow):
         server = self.pages["server"]
         settings = self.pages["settings"]
 
+        agent = self.pages["agent"]
+        agent.show_status_message.connect(self.show_status_message)
+
         chat.cloud_requested.connect(self.choose_cloud_model)
         chat.models_page_requested.connect(lambda: self.switch_page("models"))
         chat.generation_active.connect(self._generation_active)
@@ -260,6 +266,8 @@ class MainWindow(QMainWindow):
         try:
             if key == "chat":
                 page.refresh_conversations()
+            elif key == "agent":
+                page.refresh()
             elif key == "models":
                 page.refresh()
             elif key == "discover":
@@ -404,7 +412,7 @@ class MainWindow(QMainWindow):
         if state == "error" and status.get("error"):
             self.show_status_message(str(status["error"]), timeout=12000)
 
-        for key in ("chat", "models", "server", "settings"):
+        for key in ("chat", "agent", "models", "server", "settings"):
             page = self.pages.get(key)
             if page is None:
                 continue
@@ -637,7 +645,7 @@ class MainWindow(QMainWindow):
     def shutdown(self) -> None:
         """Stop Qt-side workers. Engine/API shutdown happens in main.py."""
         self._save_geometry()
-        for key in ("chat", "discover", "models", "settings", "server"):
+        for key in ("chat", "agent", "discover", "models", "settings", "server"):
             page = self.pages.get(key)
             if page is None:
                 continue
@@ -650,3 +658,7 @@ class MainWindow(QMainWindow):
                 worker.wait(6000)
         if self._unload_worker is not None and self._unload_worker.isRunning():
             self._unload_worker.wait(6000)
+        try:
+            self.services.close_agent()
+        except Exception:
+            log.exception("could not close the agent database")

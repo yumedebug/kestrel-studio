@@ -325,4 +325,3 @@ def _hf_kind(exc: Exception) -> str:
     if any(word in text for word in ("timeout", "connection", "getaddrinfo", "ssl")) or "connect" in name:
         return "network_error"
     return "hf_error"
-

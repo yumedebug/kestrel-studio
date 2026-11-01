@@ -108,4 +108,3 @@ def test_search_passes_descending_direction_when_supported(credentials):
     assert api.calls[0]["direction"] == -1
     assert api.calls[0]["filter"] is None
     assert api.calls[0]["sort"] == "likes"
-

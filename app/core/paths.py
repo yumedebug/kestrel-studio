@@ -71,6 +71,11 @@ def library_file() -> Path:
     return config_dir() / "library.json"
 
 
+def agent_database_file() -> Path:
+    """Hybrid Agent tasks, approvals, stored permissions and memories."""
+    return data_dir() / "agent.db"
+
+
 def runtime_dir() -> Path:
     return app_root() / "runtime"
 

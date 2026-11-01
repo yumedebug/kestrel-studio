@@ -55,6 +55,25 @@ DEFAULTS: dict[str, Any] = {
         "max_tokens": 1024,
         "seed": -1,
     },
+    "agent": {
+        "default_mode": "autonomous",
+        "default_model": "",  # "" = whichever model is loaded
+        "max_steps": 20,
+        "max_seconds": 900,
+        "max_retries": 3,
+        "default_shell": "cmd",
+        "command_timeout": 120,
+        "show_command_output": True,
+        "save_command_history": True,
+        "full_access": False,
+        "file_access": True,
+        "command_execution": True,
+        # These two are forced on by normalize(); they cannot be disabled.
+        "installation_approval": True,
+        "dangerous_command_approval": True,
+        "extra_directories": [],
+        "workspace": "",
+    },
     "cloud": {
         "providers": {},  # id -> {base_url, default_model}
         "last_target": None,  # {"kind":"cloud", "provider":..., "model":...}
@@ -74,6 +93,10 @@ _INT_RANGES = {
     "inference.batch_size": (32, 8192),
     "inference.load_timeout_seconds": (15, 1800),
     "server.port": (1024, 65535),
+    "agent.max_steps": (1, 200),
+    "agent.max_seconds": (30, 86400),
+    "agent.max_retries": (0, 10),
+    "agent.command_timeout": (1, 3600),
     "chat.max_tokens": (1, 131072),
     "chat.top_k": (0, 1000),
     "chat.seed": (-1, 2_147_483_647),
@@ -87,11 +110,18 @@ _ENUMS = {
     "general.theme": {"dark", "light"},
     "general.start_behavior": {"chat", "resume_last_chat", "load_last_model"},
     "inference.backend": {"auto", "cpu", "cuda", "vulkan"},
+    "agent.default_mode": {"chat", "plan", "build", "autonomous"},
+    "agent.default_shell": {"cmd", "powershell", "python", "git"},
 }
 _BOOLS = {
     "inference.auto_cpu_fallback",
     "server.auto_start",
     "server.allow_external",
+    "agent.show_command_output",
+    "agent.save_command_history",
+    "agent.full_access",
+    "agent.file_access",
+    "agent.command_execution",
 }
 
 
@@ -207,6 +237,27 @@ def normalize(data: dict[str, Any] | None) -> tuple[dict[str, Any], list[str]]:
     llama_path = get_value("inference.llama_server_path", "")
     if not isinstance(llama_path, str):
         set_value("inference.llama_server_path", "")
+
+    # Agent safety invariants: these approvals can never be switched off, not
+    # even by editing settings.json or enabling Full Access Mode.
+    set_value("agent.installation_approval", True)
+    set_value("agent.dangerous_command_approval", True)
+
+    agent_workspace = get_value("agent.workspace", "")
+    if not isinstance(agent_workspace, str):
+        set_value("agent.workspace", "")
+    agent_model = get_value("agent.default_model", "")
+    if not isinstance(agent_model, str):
+        set_value("agent.default_model", "")
+    extra_dirs = get_value("agent.extra_directories", [])
+    if not isinstance(extra_dirs, list):
+        warnings.append("agent.extra_directories: invalid list; reset")
+        set_value("agent.extra_directories", [])
+    else:
+        set_value(
+            "agent.extra_directories",
+            [str(item) for item in extra_dirs if isinstance(item, str) and item.strip()],
+        )
 
     providers = get_value("cloud.providers", {})
     if not isinstance(providers, dict):

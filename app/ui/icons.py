@@ -167,7 +167,19 @@ def _stop_circle(p: QPainter) -> None:
     p.drawRoundedRect(QRectF(7.0, 7.0, 6.0, 6.0), 1.0, 1.0)
 
 
+def _agent(p: QPainter) -> None:
+    p.drawRoundedRect(QRectF(3.5, 6.0, 13.0, 10.5), 3.0, 3.0)
+    p.drawLine(QPointF(10.0, 6.0), QPointF(10.0, 3.4))
+    p.drawEllipse(QPointF(10.0, 2.7), 0.9, 0.9)
+    p.setBrush(p.pen().color())
+    p.drawEllipse(QPointF(7.6, 10.6), 0.9, 0.9)
+    p.drawEllipse(QPointF(12.4, 10.6), 0.9, 0.9)
+    p.setBrush(Qt.NoBrush)
+    p.drawLine(QPointF(7.6, 13.4), QPointF(12.4, 13.4))
+
+
 _DRAWERS = {
+    "agent": _agent,
     "chat": _chat,
     "compass": _compass,
     "cube": _cube,

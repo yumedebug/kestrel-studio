@@ -60,4 +60,3 @@ Copy-Item -Force "LICENSE" (Join-Path $Dist "LICENSE")
 Write-Host ""
 Write-Host "Build complete: $Dist\KestrelStudio.exe"
 Write-Host "Optional runtime: .venv\Scripts\python.exe scripts\fetch_llama_cpp.py --backend cpu"
-

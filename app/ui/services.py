@@ -47,6 +47,44 @@ class AppServices:
     inference: InferenceManager
     api_server: ApiServer
     bridge: InferenceBridge = field(default_factory=InferenceBridge)
+    _agent_store: Any = field(default=None, repr=False)
+
+    @property
+    def agent_store(self):
+        """Lazily opened SQLite store for tasks, approvals, grants and memories."""
+        if self._agent_store is None:
+            from app.agent.sessions import AgentStore
+            from app.core import paths
+
+            store = AgentStore(paths.agent_database_file())
+            try:
+                # Nothing that was interrupted may resume on its own.
+                store.recover_interrupted()
+            except Exception:
+                pass
+            self._agent_store = store
+        return self._agent_store
+
+    @property
+    def agent_memory(self):
+        from app.agent.memory import MemoryStore
+
+        return MemoryStore(self.agent_store)
+
+    @property
+    def agent_permissions(self):
+        from app.agent.permissions import PermissionManager
+
+        return PermissionManager(self.agent_store, self.settings)
+
+    def close_agent(self) -> None:
+        if self._agent_store is not None:
+            try:
+                self._agent_store.close()
+            except Exception:
+                pass
+            finally:
+                self._agent_store = None
 
     def library_directory(self):
         from pathlib import Path

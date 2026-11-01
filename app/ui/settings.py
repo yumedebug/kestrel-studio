@@ -25,6 +25,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -225,6 +227,9 @@ class SettingsPage(QWidget):
         self.content_layout.addWidget(card)
         self._cards["server"] = card
 
+        # Agent ------------------------------------------------------------
+        self.content_layout.addWidget(self._build_agent_card())
+
         # Storage ----------------------------------------------------------
         card, form = self._section(
             "Storage",
@@ -352,6 +357,120 @@ class SettingsPage(QWidget):
         self.content_layout.addWidget(about)
         self.content_layout.addStretch(1)
 
+    def _build_agent_card(self) -> Card:
+        card = Card()
+        outer = QVBoxLayout(card)
+        outer.setContentsMargins(22, 20, 22, 20)
+        outer.setSpacing(14)
+        outer.addWidget(section_title("Agent"))
+        outer.addWidget(
+            muted_label(
+                "Hybrid Agent の既定値、ターミナル、権限を設定します。"
+                "インストールと危険な操作の承認は常に有効で、無効化できません。"
+            )
+        )
+
+        outer.addWidget(muted_label("General"))
+        general = QFormLayout()
+        general.setHorizontalSpacing(24)
+        general.setVerticalSpacing(11)
+        self.agent_mode = QComboBox()
+        self.agent_mode.addItem("Autonomous Mode", "autonomous")
+        self.agent_mode.addItem("Build Mode", "build")
+        self.agent_mode.addItem("Plan Mode", "plan")
+        self.agent_mode.addItem("Chat Mode", "chat")
+        general.addRow("Default Agent Mode", self.agent_mode)
+        self.agent_model = QComboBox()
+        general.addRow("Default Model", self.agent_model)
+        self.agent_max_steps = QSpinBox()
+        self.agent_max_steps.setRange(1, 200)
+        general.addRow("Maximum Steps", self.agent_max_steps)
+        self.agent_max_seconds = QSpinBox()
+        self.agent_max_seconds.setRange(30, 86400)
+        self.agent_max_seconds.setSuffix(" 秒")
+        general.addRow("Maximum Execution Time", self.agent_max_seconds)
+        self.agent_max_retries = QSpinBox()
+        self.agent_max_retries.setRange(0, 10)
+        general.addRow("Maximum Retries", self.agent_max_retries)
+        outer.addLayout(general)
+
+        outer.addWidget(muted_label("Terminal"))
+        terminal = QFormLayout()
+        terminal.setHorizontalSpacing(24)
+        terminal.setVerticalSpacing(11)
+        self.agent_shell = QComboBox()
+        self.agent_shell.addItem("CMD (cmd.exe)", "cmd")
+        self.agent_shell.addItem("PowerShell", "powershell")
+        self.agent_shell.addItem("Python", "python")
+        self.agent_shell.addItem("Git", "git")
+        terminal.addRow("Default Shell", self.agent_shell)
+        self.agent_timeout = QSpinBox()
+        self.agent_timeout.setRange(1, 3600)
+        self.agent_timeout.setSuffix(" 秒")
+        terminal.addRow("Command Timeout", self.agent_timeout)
+        self.agent_show_output = QCheckBox("Show Command Output")
+        terminal.addRow("", self.agent_show_output)
+        self.agent_save_history = QCheckBox("Save Command History")
+        terminal.addRow("", self.agent_save_history)
+        outer.addLayout(terminal)
+
+        outer.addWidget(muted_label("Permissions"))
+        permissions = QFormLayout()
+        permissions.setHorizontalSpacing(24)
+        permissions.setVerticalSpacing(8)
+        self.agent_full_access = QCheckBox(
+            "Full Access Mode（作業ディレクトリ外のファイル変更を自動で許可）"
+        )
+        permissions.addRow("", self.agent_full_access)
+        self.agent_file_access = QCheckBox("File Access（ファイル操作を許可）")
+        permissions.addRow("", self.agent_file_access)
+        self.agent_command_execution = QCheckBox("Command Execution（コマンド実行を許可）")
+        permissions.addRow("", self.agent_command_execution)
+        self.agent_install_approval = QCheckBox("Installation Approval（常に有効）")
+        self.agent_install_approval.setChecked(True)
+        self.agent_install_approval.setEnabled(False)
+        permissions.addRow("", self.agent_install_approval)
+        self.agent_danger_approval = QCheckBox("Dangerous Command Approval（常に有効）")
+        self.agent_danger_approval.setChecked(True)
+        self.agent_danger_approval.setEnabled(False)
+        permissions.addRow("", self.agent_danger_approval)
+        outer.addLayout(permissions)
+
+        grants_header = QHBoxLayout()
+        grants_header.addWidget(muted_label("保存済みの許可（Always Allow）"))
+        grants_header.addStretch(1)
+        self.agent_grant_count = muted_label("0 件")
+        self.agent_grant_count.setStyleSheet("font-size: 8.5pt;")
+        grants_header.addWidget(self.agent_grant_count)
+        outer.addLayout(grants_header)
+        grant_hint = muted_label(
+            "許可は保存した種類と範囲にのみ適用されます。危険な操作・インストール・"
+            "管理者権限の操作は保存済みでも毎回承認が必要です。"
+            "エージェント自身はこの一覧を追加・変更・削除できません。"
+        )
+        grant_hint.setStyleSheet("font-size: 8.5pt;")
+        outer.addWidget(grant_hint)
+        self.agent_grants = QTableWidget(0, 4)
+        self.agent_grants.setHorizontalHeaderLabels(
+            ["種類", "対象範囲", "対象", "最終使用"]
+        )
+        self.agent_grants.setColumnWidth(0, 90)
+        self.agent_grants.setColumnWidth(1, 300)
+        self.agent_grants.setColumnWidth(2, 110)
+        self.agent_grants.setSelectionBehavior(QTableWidget.SelectRows)
+        self.agent_grants.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.agent_grants.setMinimumHeight(120)
+        outer.addWidget(self.agent_grants)
+        grant_actions = QHBoxLayout()
+        self.agent_revoke_button = QPushButton("選択した許可を削除")
+        self.agent_revoke_button.setProperty("variant", "danger")
+        self.agent_revoke_button.clicked.connect(self._delete_agent_grant)
+        grant_actions.addWidget(self.agent_revoke_button)
+        grant_actions.addStretch(1)
+        outer.addLayout(grant_actions)
+        self._cards["agent"] = card
+        return card
+
     # -- load / save -------------------------------------------------------
     def _load_values(self) -> None:
         s = self.settings
@@ -370,6 +489,30 @@ class SettingsPage(QWidget):
         self.server_port.setValue(int(s.get("server.port", 1234)))
         self.auto_start.setChecked(bool(s.get("server.auto_start", False)))
         self.allow_external.setChecked(bool(s.get("server.allow_external", False)))
+        self._set_combo(self.agent_mode, s.get("agent.default_mode", "autonomous"))
+        self._refresh_agent_models()
+        preferred = str(s.get("agent.default_model", "") or "")
+        if preferred:
+            index = self.agent_model.findData(preferred)
+            if index < 0:
+                self.agent_model.addItem(preferred, preferred)
+                index = self.agent_model.findData(preferred)
+            self.agent_model.setCurrentIndex(max(0, index))
+        self.agent_max_steps.setValue(int(s.get("agent.max_steps", 20)))
+        self.agent_max_seconds.setValue(int(s.get("agent.max_seconds", 900)))
+        self.agent_max_retries.setValue(int(s.get("agent.max_retries", 3)))
+        self._set_combo(self.agent_shell, s.get("agent.default_shell", "cmd"))
+        self.agent_timeout.setValue(int(s.get("agent.command_timeout", 120)))
+        self.agent_show_output.setChecked(bool(s.get("agent.show_command_output", True)))
+        self.agent_save_history.setChecked(bool(s.get("agent.save_command_history", True)))
+        self.agent_full_access.setChecked(bool(s.get("agent.full_access", False)))
+        self.agent_file_access.setChecked(bool(s.get("agent.file_access", True)))
+        self.agent_command_execution.setChecked(
+            bool(s.get("agent.command_execution", True))
+        )
+        self.agent_install_approval.setChecked(True)
+        self.agent_danger_approval.setChecked(True)
+        self._refresh_grants()
         self._refresh_storage()
         self.saved_label.setText("")
 
@@ -422,6 +565,20 @@ class SettingsPage(QWidget):
                     "auto_start": self.auto_start.isChecked(),
                     "allow_external": self.allow_external.isChecked(),
                 },
+                "agent": {
+                    "default_mode": self.agent_mode.currentData(),
+                    "default_model": str(self.agent_model.currentData() or ""),
+                    "max_steps": self.agent_max_steps.value(),
+                    "max_seconds": self.agent_max_seconds.value(),
+                    "max_retries": self.agent_max_retries.value(),
+                    "default_shell": self.agent_shell.currentData(),
+                    "command_timeout": self.agent_timeout.value(),
+                    "show_command_output": self.agent_show_output.isChecked(),
+                    "save_command_history": self.agent_save_history.isChecked(),
+                    "full_access": self.agent_full_access.isChecked(),
+                    "file_access": self.agent_file_access.isChecked(),
+                    "command_execution": self.agent_command_execution.isChecked(),
+                },
             }
         )
         self.saved_label.setText("Saved")
@@ -452,6 +609,69 @@ class SettingsPage(QWidget):
         )
         if path:
             self.llama_path.setText(path)
+
+    # -- agent -------------------------------------------------------------
+    def _refresh_agent_models(self) -> None:
+        current = str(self.agent_model.currentData() or "")
+        self.agent_model.blockSignals(True)
+        self.agent_model.clear()
+        self.agent_model.addItem("（読み込み中のモデル）", "")
+        try:
+            entries = self.services.library.entries()
+        except Exception:
+            entries = []
+        for entry in entries:
+            name = str(getattr(entry, "name", entry))
+            self.agent_model.addItem(name, name)
+        index = self.agent_model.findData(current)
+        self.agent_model.setCurrentIndex(index if index >= 0 else 0)
+        self.agent_model.blockSignals(False)
+
+    def _refresh_grants(self) -> None:
+        table = self.agent_grants
+        table.setRowCount(0)
+        try:
+            grants = self.services.agent_permissions.list_grants()
+        except Exception:
+            grants = []
+        for grant in grants:
+            row = table.rowCount()
+            table.insertRow(row)
+            values = [
+                grant.kind,
+                grant.scope or "—",
+                grant.target or "—",
+                (grant.last_used or "—")[:19].replace("T", " "),
+            ]
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(str(value))
+                if column == 0:
+                    item.setData(Qt.UserRole, grant.id)
+                table.setItem(row, column, item)
+        self.agent_grant_count.setText(f"{len(grants)} 件")
+
+    def _delete_agent_grant(self) -> None:
+        row = self.agent_grants.currentRow()
+        if row < 0:
+            self.show_status_message.emit("削除する許可を選択してください")
+            return
+        item = self.agent_grants.item(row, 0)
+        grant_id = str(item.data(Qt.UserRole) or "") if item is not None else ""
+        if not grant_id:
+            return
+        if not confirm(
+            self,
+            "保存済みの許可を削除",
+            "この許可を削除しますか？同じ操作は再び承認が必要になります。",
+        ):
+            return
+        try:
+            self.services.agent_permissions.revoke_grant(grant_id, origin="user")
+        except Exception as exc:
+            show_error(self, "許可を削除できませんでした", str(exc))
+            return
+        self._refresh_grants()
+        self.show_status_message.emit("保存済みの許可を削除しました")
 
     def _external_toggled(self, checked: bool) -> None:
         if not checked:
@@ -728,7 +948,7 @@ class SettingsPage(QWidget):
 
     # -- external hooks ----------------------------------------------------
     def open_section(self, name: str) -> None:
-        """Scroll to a settings card (general/inference/server/storage/cloud)."""
+        """Scroll to a settings card (general/inference/server/agent/storage/cloud)."""
         card = self._cards.get(name)
         if card is not None:
             self.scroll.ensureWidgetVisible(card, 0, 12)

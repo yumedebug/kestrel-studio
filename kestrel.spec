@@ -19,6 +19,9 @@ hiddenimports = [
     "PySide6.QtSvg",
 ]
 hiddenimports += collect_submodules("app.ui")
+# The hybrid agent registers its tools and sub-agents lazily at runtime, so keep
+# every module explicit; a missing tool module would only fail after packaging.
+hiddenimports += collect_submodules("app.agent")
 hiddenimports += collect_submodules("uvicorn")
 
 excludes = [
@@ -94,4 +97,3 @@ coll = COLLECT(
     upx_exclude=[],
     name="KestrelStudio",
 )
-
