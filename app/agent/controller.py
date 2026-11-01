@@ -96,7 +96,7 @@ class AgentController:
         self.computer_use = computer_use
         self.performance_monitor = performance_monitor
         self._limits = limits or AgentLimits()
-        self._subagents = build_subagents(planner, permissions)
+        self._subagents: dict[str, Any] | None = None
 
         self._lock = threading.RLock()
         self._listener: Callable[[dict[str, Any]], None] | None = None
@@ -117,6 +117,8 @@ class AgentController:
 
     @property
     def subagents(self) -> dict[str, Any]:
+        if self._subagents is None:
+            self._subagents = build_subagents(self.planner, self.permissions)
         return dict(self._subagents)
 
     @property
@@ -570,7 +572,7 @@ class AgentController:
     def _step_hint(self, step: PlanStep | None, goal: str, observation: str) -> str:
         if step is None:
             return ""
-        agent = subagent_for_tool(self._subagents, step.tool) if step.tool else None
+        agent = subagent_for_tool(self.subagents, step.tool) if step.tool else None
         if agent is None or not agent.available:
             return ""
         return self._consult(
@@ -578,7 +580,7 @@ class AgentController:
         )
 
     def _consult(self, name: str, goal: str, context_text: str) -> str:
-        agent = self._subagents.get(name)
+        agent = self.subagents.get(name)
         if agent is None:
             return ""
         return agent.advise(goal, context_text)

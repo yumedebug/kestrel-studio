@@ -150,7 +150,7 @@ class Database:
             ).fetchone()
         return self._chat_from_row(row) if row else None
 
-    def list_chats(self, limit: int = 200) -> list[Chat]:
+    def list_chats(self, limit: int = 100) -> list[Chat]:
         with self._lock:
             rows = self._conn.execute(
                 "SELECT * FROM chats ORDER BY updated_at DESC LIMIT ?", (limit,)

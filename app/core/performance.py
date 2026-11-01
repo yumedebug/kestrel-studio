@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.resource_budget import detect_budget
+
 
 @dataclass(frozen=True)
 class PerformanceSnapshot:
@@ -25,6 +27,8 @@ class PerformanceSnapshot:
     gpu_memory_total_bytes: int | None = None
     model_memory_bytes: int | None = None
     inference_tokens_per_second: float | None = None
+    memory_budget_bytes: int | None = None
+    memory_profile: str = "standard"
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -40,6 +44,8 @@ class PerformanceSnapshot:
             "gpu_memory_total_bytes": self.gpu_memory_total_bytes,
             "model_memory_bytes": self.model_memory_bytes,
             "inference_tokens_per_second": self.inference_tokens_per_second,
+            "memory_budget_bytes": self.memory_budget_bytes,
+            "memory_profile": self.memory_profile,
         }
 
 
@@ -79,6 +85,10 @@ class PerformanceMonitor:
             gpu_memory_total_bytes=gpu_total,
             model_memory_bytes=inference_data.get("model_memory_bytes"),
             inference_tokens_per_second=inference_data.get("tokens_per_second"),
+            memory_budget_bytes=(
+                int(memory_total * 0.75) if memory_total is not None else None
+            ),
+            memory_profile=detect_budget().label,
         )
         if store is not None:
             try:

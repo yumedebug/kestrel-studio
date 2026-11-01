@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+import gc
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
@@ -276,6 +277,7 @@ class InferenceManager:
             self._error = ""
             self._warning = ""
             self._loaded_at = None
+        gc.collect()
         self._notify_status()
 
     def cancel_all(self) -> None:

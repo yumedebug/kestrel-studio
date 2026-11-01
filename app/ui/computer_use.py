@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QHideEvent, QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
@@ -31,7 +31,16 @@ class ComputerUsePage(QWidget):
         self._refresh_screenshot()
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._refresh_screenshot)
-        self._timer.start(1000)
+        self._timer.setInterval(1500)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._refresh_screenshot()
+        self._timer.start()
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._timer.stop()
+        super().hideEvent(event)
 
     def _build(self) -> None:
         root = QVBoxLayout(self)

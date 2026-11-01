@@ -99,12 +99,15 @@ class GenerationParams:
 
     @classmethod
     def from_settings(cls, values: dict[str, Any]) -> "GenerationParams":
+        from app.core.resource_budget import detect_budget
+
+        max_tokens = min(int(values.get("max_tokens", 1024)), detect_budget().max_output_tokens)
         return cls(
             temperature=float(values.get("temperature", 0.7)),
             top_p=float(values.get("top_p", 0.95)),
             top_k=int(values.get("top_k", 40)),
             repeat_penalty=float(values.get("repeat_penalty", 1.1)),
-            max_tokens=int(values.get("max_tokens", 1024)),
+            max_tokens=max(1, max_tokens),
             seed=int(values.get("seed", -1)),
             stop=list(values.get("stop") or []),
         )
@@ -123,8 +126,14 @@ class LoadOptions:
     def resolved(self, settings: Any) -> "LoadOptions":
         """Fill unset values from the global inference settings."""
         from os import cpu_count
+        from app.core.resource_budget import detect_budget
 
-        ctx = self.context_length or settings.get("inference.default_context_length", 4096)
+        budget = detect_budget(settings)
+
+        ctx = min(
+            self.context_length or settings.get("inference.default_context_length", 4096),
+            budget.context_length,
+        )
         gpu = (
             self.gpu_layers
             if self.gpu_layers is not None
@@ -136,8 +145,9 @@ class LoadOptions:
             else settings.get("inference.cpu_threads", 0)
         )
         if not threads or threads <= 0:
-            threads = max(1, (cpu_count() or 4) // 2)
-        batch = self.batch_size or settings.get("inference.batch_size", 512)
+            threads = min(budget.cpu_threads, max(1, (cpu_count() or 4) // 2))
+        threads = min(int(threads), budget.cpu_threads)
+        batch = min(self.batch_size or settings.get("inference.batch_size", 512), budget.batch_size)
         return LoadOptions(
             context_length=max(128, int(ctx)),
             gpu_layers=max(0, int(gpu)),

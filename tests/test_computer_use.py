@@ -39,6 +39,8 @@ def test_performance_monitor_returns_stable_snapshot() -> None:
         "gpu_memory_total_bytes",
         "model_memory_bytes",
         "inference_tokens_per_second",
+        "memory_budget_bytes",
+        "memory_profile",
     }
 
 

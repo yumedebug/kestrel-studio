@@ -248,9 +248,10 @@ def main(argv: list[str] | None = None) -> int:
                 discover_page.disable_automatic_search()
 
             def smoke() -> None:
-                # MainWindow constructs every page eagerly. The smoke check
-                # validates construction and Qt plugin startup without
-                # navigating pages that may intentionally start network work.
+                # Visit every page so lazy pages are also constructed, while
+                # keeping automatic discovery/network work disabled.
+                for key in window.pages:
+                    window.switch_page(key)
                 log.info("smoke test: all pages created")
                 window.close()
                 QTimer.singleShot(150, app.quit)

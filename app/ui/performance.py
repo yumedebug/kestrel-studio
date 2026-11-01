@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QHideEvent, QShowEvent
 from PySide6.QtWidgets import QFormLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QVBoxLayout, QWidget
 
 from app.ui.services import AppServices
 from app.ui.widgets import Card, muted_label
+from app.core.resource_budget import detect_budget
 
 
 def _bytes(value: int | None) -> str:
@@ -35,6 +37,7 @@ class PerformancePage(QWidget):
         self.gpu = QLabel("—")
         self.model_memory = QLabel("—")
         self.speed = QLabel("—")
+        self.budget = QLabel("—")
         form.addRow("CPU", self.cpu)
         form.addRow("メモリ", self.memory)
         form.addRow("ディスク空き", self.disk)
@@ -42,6 +45,7 @@ class PerformancePage(QWidget):
         form.addRow("GPU VRAM", self.gpu)
         form.addRow("モデルメモリ", self.model_memory)
         form.addRow("推論速度", self.speed)
+        form.addRow("メモリプロファイル", self.budget)
         root.addWidget(card)
         history_row = QHBoxLayout()
         history_row.addWidget(QLabel("保存済みサンプル"))
@@ -55,8 +59,17 @@ class PerformancePage(QWidget):
         root.addStretch(1)
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
-        self._timer.start(1000)
+        self._timer.setInterval(2000)
+        self.budget.setText(detect_budget(self.services.settings).label)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
         self.refresh()
+        self._timer.start()
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._timer.stop()
+        super().hideEvent(event)
 
     def refresh(self) -> None:
         snapshot = self.services.performance.sample(

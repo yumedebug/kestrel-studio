@@ -330,7 +330,7 @@ class AgentStore:
         rows = self.query("SELECT * FROM agent_tasks WHERE id = ?", (task_id,))
         return self._task_from_row(rows[0]) if rows else None
 
-    def list_tasks(self, limit: int = 100, status: str | None = None) -> list[TaskRecord]:
+    def list_tasks(self, limit: int = 50, status: str | None = None) -> list[TaskRecord]:
         if status:
             rows = self.query(
                 "SELECT * FROM agent_tasks WHERE status = ? ORDER BY updated_at DESC LIMIT ?",
@@ -418,7 +418,7 @@ class AgentStore:
         )
         return sample_id
 
-    def list_performance_samples(self, limit: int = 300) -> list[dict[str, Any]]:
+    def list_performance_samples(self, limit: int = 100) -> list[dict[str, Any]]:
         rows = self.query(
             "SELECT id,task_id,sample,created_at FROM performance_samples ORDER BY created_at DESC LIMIT ?",
             (int(limit),),
@@ -551,7 +551,7 @@ class AgentStore:
         )
         return record
 
-    def list_commands(self, task_id: str | None = None, limit: int = 200) -> list[CommandRecord]:
+    def list_commands(self, task_id: str | None = None, limit: int = 100) -> list[CommandRecord]:
         if task_id:
             rows = self.query(
                 "SELECT * FROM agent_commands WHERE task_id = ? ORDER BY created_at, rowid LIMIT ?",
@@ -622,7 +622,7 @@ class AgentStore:
         return record
 
     def list_approvals(
-        self, task_id: str | None = None, limit: int = 200
+        self, task_id: str | None = None, limit: int = 100
     ) -> list[ApprovalRecord]:
         if task_id:
             rows = self.query(

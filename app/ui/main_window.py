@@ -91,6 +91,17 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(app_icon())
         localize_widget_tree(self)
 
+    def _ensure_page(self, key: str) -> QWidget:
+        page = self.pages[key]
+        if key in self._page_factories and type(page) is QWidget:
+            page = self._page_factories[key](self.services)
+            index = self.stack.indexOf(self.pages[key])
+            self.stack.removeWidget(self.pages[key])
+            self.pages[key].deleteLater()
+            self.pages[key] = page
+            self.stack.insertWidget(index, page)
+        return page
+
     # -- construction ------------------------------------------------------
     def _build(self) -> None:
         self.setObjectName("mainWindow")
@@ -110,7 +121,7 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget()
         self.pages: dict[str, QWidget] = {}
-        page_types = {
+        self._page_factories: dict[str, Callable[[], QWidget]] = {
             "chat": ChatPage,
             "agent": AgentPage,
             "computer": ComputerUsePage,
@@ -121,7 +132,12 @@ class MainWindow(QMainWindow):
             "settings": SettingsPage,
         }
         for key, _label, _icon in NAV_PAGES:
-            page = page_types[key](self.services)
+            if key in {"computer", "performance"}:
+                # These pages poll the OS and capture screenshots; construct them
+                # only when the user opens them.
+                page = QWidget()
+            else:
+                page = self._page_factories[key](self.services)
             self.pages[key] = page
             self.stack.addWidget(page)
         right_layout.addWidget(self.stack, 1)
@@ -260,7 +276,7 @@ class MainWindow(QMainWindow):
     def switch_page(self, key: str) -> None:
         if key not in self.pages:
             return
-        page = self.pages[key]
+        page = self._ensure_page(key)
         self.stack.setCurrentWidget(page)
         button = self.nav_buttons.get(key)
         if button is not None and not button.isChecked():

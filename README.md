@@ -34,6 +34,15 @@ DuckDuckGo search domain. Search is subject to the public endpoint's availabilit
 rate limits, robots/service terms and result quality; no API key or paid account is
 included or required.
 
+On Windows systems with 4 GB RAM or less, inference settings are adapted at runtime
+without changing the configured profile: context is capped at 2048, batch size at
+128, CPU threads at 2, and chat output at 512 tokens. The Performance Monitor shows
+the selected memory profile and budget. Computer Use and Performance polling are
+started only while their pages are visible, and the model manager releases backend
+objects and runs garbage collection after unload. History queries and terminal
+output remain bounded; this reduces peak memory but cannot compensate for a model
+that is intrinsically larger than available RAM.
+
 The planner requires a working model. This workstation has no local GGUF runtime and no provider key, so the planner loop was validated with deterministic fake model responses in the test suite, not against a real LLM. Manual terminal commands, tool execution, permission checks, task persistence, and sub-agent isolation were exercised separately; review every command before approving it.
 
 ## Requirements
