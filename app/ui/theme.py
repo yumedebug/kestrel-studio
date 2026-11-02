@@ -81,6 +81,13 @@ QLabel#pageTitle {
     font-size: 15pt;
     font-weight: 600;
 }
+QLabel[variant="navGroup"] {
+    color: $text_faint;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 8px 10px 3px 10px;
+}
 QLabel#sectionTitle {
     font-size: 11pt;
     font-weight: 600;

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -150,10 +151,10 @@ class MainWindow(QMainWindow):
     def _build_sidebar(self) -> QFrame:
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(216)
+        sidebar.setFixedWidth(232)
         layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(12, 16, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(14, 18, 14, 14)
+        layout.setSpacing(5)
 
         brand = QHBoxLayout()
         brand.setContentsMargins(6, 0, 4, 0)
@@ -173,25 +174,34 @@ class MainWindow(QMainWindow):
         brand_text.addWidget(tagline)
         brand.addLayout(brand_text, 1)
         layout.addLayout(brand)
-        layout.addSpacing(14)
+        layout.addSpacing(20)
 
         self.nav_group = QButtonGroup(self)
         self.nav_group.setExclusive(True)
         self.nav_buttons: dict[str, QPushButton] = {}
         self._nav_icons = {key: icon for key, _label, icon in NAV_PAGES}
         colors = current_palette()
-        for index, (key, label, icon_name) in enumerate(NAV_PAGES):
-            button = QPushButton(f"  {label}")
-            button.setProperty("variant", "nav")
-            button.setCheckable(True)
-            button.setCursor(Qt.PointingHandCursor)
-            button.setIcon(make_icon(icon_name, colors["text_muted"], colors["accent_hover"]))
-            button.setIconSize(QSize(17, 17))
-            button.setMinimumHeight(38)
-            button.clicked.connect(lambda _checked=False, k=key: self.switch_page(k))
-            self.nav_group.addButton(button, index)
-            self.nav_buttons[key] = button
-            layout.addWidget(button)
+        groups = (("WORKSPACE", ("chat", "agent")), ("TOOLS", ("computer", "performance")),
+                  ("LIBRARY", ("discover", "models")), ("SYSTEM", ("server", "settings")))
+        index = 0
+        for group_label, keys in groups:
+            group = QLabel(group_label)
+            group.setProperty("variant", "navGroup")
+            layout.addWidget(group)
+            for key, label, icon_name in (item for item in NAV_PAGES if item[0] in keys):
+                button = QPushButton(f"  {label}")
+                button.setProperty("variant", "nav")
+                button.setCheckable(True)
+                button.setCursor(Qt.PointingHandCursor)
+                button.setIcon(make_icon(icon_name, colors["text_muted"], colors["accent_hover"]))
+                button.setIconSize(QSize(17, 17))
+                button.setMinimumHeight(38)
+                button.clicked.connect(lambda _checked=False, k=key: self.switch_page(k))
+                self.nav_group.addButton(button, index)
+                self.nav_buttons[key] = button
+                layout.addWidget(button)
+                index += 1
+            layout.addSpacing(10)
         self.nav_buttons["chat"].setChecked(True)
 
         layout.addStretch(1)
@@ -202,7 +212,7 @@ class MainWindow(QMainWindow):
         self.library_summary.setWordWrap(True)
         layout.addWidget(self.library_summary)
 
-        hint = QLabel("クラウドモデルを使う場合を除き、会話はこの PC 内に保存されます。")
+        hint = QLabel("会話と履歴はこのPC内に保存されます。")
         hint.setProperty("variant", "faint")
         hint.setWordWrap(True)
         hint.setStyleSheet("font-size: 8pt; padding: 2px 8px 0 8px;")
@@ -212,14 +222,17 @@ class MainWindow(QMainWindow):
     def _build_topbar(self) -> QFrame:
         topbar = QFrame()
         topbar.setObjectName("topbar")
-        topbar.setMinimumHeight(64)
+        topbar.setMinimumHeight(72)
         layout = QHBoxLayout(topbar)
-        layout.setContentsMargins(22, 10, 22, 10)
+        layout.setContentsMargins(28, 14, 28, 14)
         layout.setSpacing(12)
 
         self.page_title = QLabel("チャット")
         self.page_title.setObjectName("pageTitle")
         layout.addWidget(self.page_title)
+        self.page_context = QLabel("会話を始める")
+        self.page_context.setProperty("variant", "muted")
+        layout.addWidget(self.page_context)
         layout.addStretch(1)
 
         self.model_name = QLabel("モデルが選択されていません")
@@ -283,6 +296,12 @@ class MainWindow(QMainWindow):
             button.setChecked(True)
         label = next(item[1] for item in NAV_PAGES if item[0] == key)
         self.page_title.setText(label)
+        self.page_context.setText({
+            "chat": "会話を始める", "agent": "タスクを安全に自動化",
+            "computer": "画面を確認して操作", "performance": "状態と負荷を確認",
+            "discover": "モデルを探す", "models": "モデルを管理",
+            "server": "ローカルAPIを共有", "settings": "アプリを調整",
+        }.get(key, ""))
         self.setWindowTitle(f"{APP_NAME} — {label}")
 
         try:

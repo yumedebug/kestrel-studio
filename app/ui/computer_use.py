@@ -5,7 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QHideEvent, QPixmap, QShowEvent
 from PySide6.QtWidgets import (
-    QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSpinBox,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -44,55 +45,88 @@ class ComputerUsePage(QWidget):
 
     def _build(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 14, 20, 14)
-        root.setSpacing(12)
+        root.setContentsMargins(28, 22, 28, 24)
+        root.setSpacing(16)
         title = QLabel("Computer Use")
-        title.setObjectName("sectionTitle")
+        title.setProperty("variant", "title")
         root.addWidget(title)
         root.addWidget(
             muted_label(
-                "画面確認と限定的な入力を提供します。すべての入力操作は毎回確認が必要です。"
+                "画面を確認し、必要な操作だけを明示的に承認して実行します。"
             )
         )
+        safety = QLabel("● すべての入力操作は毎回確認されます")
+        safety.setProperty("variant", "success")
+        root.addWidget(safety)
 
-        card = Card()
-        form = QFormLayout(card)
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setChildrenCollapsible(False)
+        left = QVBoxLayout()
+        left_widget = QWidget()
+        left_widget.setLayout(left)
+        preview_card = Card()
+        preview_layout = QVBoxLayout(preview_card)
+        preview_layout.setContentsMargins(16, 16, 16, 16)
+        preview_header = QHBoxLayout()
+        preview_header.addWidget(QLabel("画面プレビュー"))
+        preview_header.addStretch(1)
+        self.capture_status = QLabel("待機中")
+        self.capture_status.setProperty("variant", "muted")
+        preview_header.addWidget(self.capture_status)
+        preview_layout.addLayout(preview_header)
+        self.preview = QLabel("スクリーンショットを取得中…")
+        self.preview.setMinimumHeight(300)
+        self.preview.setAlignment(Qt.AlignCenter)
+        preview_layout.addWidget(self.preview, 1)
+        left.addWidget(preview_card, 1)
+        splitter.addWidget(left_widget)
+
+        right = QVBoxLayout()
+        right_widget = QWidget()
+        right_widget.setLayout(right)
+        action_card = Card()
+        action_layout = QVBoxLayout(action_card)
+        action_layout.setContentsMargins(18, 18, 18, 18)
+        action_layout.addWidget(QLabel("操作"))
+        action_layout.addWidget(muted_label("座標クリックまたはテキスト入力を選択してください。"))
         self.x = QSpinBox()
         self.x.setRange(0, 10000)
         self.y = QSpinBox()
         self.y.setRange(0, 10000)
-        coordinates = QHBoxLayout()
-        coordinates.addWidget(QLabel("X"))
-        coordinates.addWidget(self.x)
-        coordinates.addWidget(QLabel("Y"))
-        coordinates.addWidget(self.y)
+        coordinates = QGridLayout()
+        coordinates.addWidget(QLabel("X"), 0, 0)
+        coordinates.addWidget(self.x, 0, 1)
+        coordinates.addWidget(QLabel("Y"), 1, 0)
+        coordinates.addWidget(self.y, 1, 1)
         self.click_button = QPushButton("承認してクリック")
+        self.click_button.setProperty("variant", "primary")
         self.click_button.clicked.connect(self._click)
-        coordinates.addWidget(self.click_button)
-        form.addRow("ポインター", coordinates)
+        coordinates.addWidget(self.click_button, 0, 2, 2, 1)
+        action_layout.addLayout(coordinates)
         self.text = QLineEdit()
         self.text.setMaxLength(4000)
+        self.text.setPlaceholderText("入力するテキスト")
         self.type_button = QPushButton("承認して入力")
         self.type_button.clicked.connect(self._type)
         type_row = QHBoxLayout()
         type_row.addWidget(self.text, 1)
         type_row.addWidget(self.type_button)
-        form.addRow("テキスト", type_row)
-        root.addWidget(card)
+        action_layout.addLayout(type_row)
+        right.addWidget(action_card)
         history_row = QHBoxLayout()
-        history_row.addWidget(QLabel("Computer Use 履歴"))
+        history_row.addWidget(QLabel("最近の操作"))
         clear = QPushButton("履歴を削除")
+        clear.setProperty("variant", "ghost")
         clear.clicked.connect(self._clear_history)
         history_row.addWidget(clear)
-        root.addLayout(history_row)
+        right.addLayout(history_row)
         self.history = QListWidget()
-        self.history.setMaximumHeight(130)
-        root.addWidget(self.history)
-
-        self.preview = QLabel("スクリーンショットを取得中…")
-        self.preview.setMinimumHeight(300)
-        self.preview.setAlignment(Qt.AlignCenter)
-        root.addWidget(self.preview, 1)
+        self.history.setMinimumHeight(150)
+        right.addWidget(self.history, 1)
+        splitter.addWidget(right_widget)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+        root.addWidget(splitter, 1)
 
     def _approval(self, request: ActionRequest) -> ApprovalOutcome:
         result = QMessageBox.question(
@@ -134,6 +168,7 @@ class ComputerUsePage(QWidget):
         pixmap: QPixmap = screen.grabWindow(0)
         if pixmap.isNull():
             return
+        self.capture_status.setText("ライブ")
         self.preview.setPixmap(pixmap.scaled(
             self.preview.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
         ))

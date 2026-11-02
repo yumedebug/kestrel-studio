@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QHideEvent, QShowEvent
-from PySide6.QtWidgets import QFormLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QVBoxLayout, QWidget
 
 from app.ui.services import AppServices
 from app.ui.widgets import Card, muted_label
@@ -22,34 +22,38 @@ class PerformancePage(QWidget):
         super().__init__(parent)
         self.services = services
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 14, 20, 14)
-        root.setSpacing(12)
+        root.setContentsMargins(28, 22, 28, 24)
+        root.setSpacing(16)
         title = QLabel("Performance Monitor")
-        title.setObjectName("sectionTitle")
+        title.setProperty("variant", "title")
         root.addWidget(title)
-        root.addWidget(muted_label("このPC上の読み取り専用メトリクスを1秒ごとに更新します。"))
-        card = Card()
-        form = QFormLayout(card)
-        self.cpu = QLabel("—")
-        self.memory = QLabel("—")
-        self.disk = QLabel("—")
-        self.processes = QLabel("—")
-        self.gpu = QLabel("—")
-        self.model_memory = QLabel("—")
-        self.speed = QLabel("—")
+        root.addWidget(muted_label("このPCとモデルの状態を、必要なときだけ読み取り専用で計測します。"))
+        metric_grid = QGridLayout()
+        metric_grid.setSpacing(10)
+        self.cpu = self._metric(metric_grid, 0, 0, "CPU", "—")
+        self.memory = self._metric(metric_grid, 0, 1, "メモリ", "—")
+        self.gpu = self._metric(metric_grid, 0, 2, "GPU VRAM", "—")
+        self.speed = self._metric(metric_grid, 1, 0, "推論速度", "—")
+        self.model_memory = self._metric(metric_grid, 1, 1, "モデル", "—")
+        self.processes = self._metric(metric_grid, 1, 2, "プロセス", "—")
+        root.addLayout(metric_grid)
+        budget_card = Card(soft=True)
+        budget_layout = QHBoxLayout(budget_card)
+        budget_layout.setContentsMargins(16, 12, 16, 12)
+        budget_layout.addWidget(QLabel("メモリプロファイル"))
         self.budget = QLabel("—")
-        form.addRow("CPU", self.cpu)
-        form.addRow("メモリ", self.memory)
-        form.addRow("ディスク空き", self.disk)
-        form.addRow("プロセス数", self.processes)
-        form.addRow("GPU VRAM", self.gpu)
-        form.addRow("モデルメモリ", self.model_memory)
-        form.addRow("推論速度", self.speed)
-        form.addRow("メモリプロファイル", self.budget)
-        root.addWidget(card)
+        self.budget.setProperty("variant", "success")
+        budget_layout.addWidget(self.budget)
+        budget_layout.addStretch(1)
+        self.disk = QLabel("ディスク空き —")
+        self.disk.setProperty("variant", "muted")
+        budget_layout.addWidget(self.disk)
+        root.addWidget(budget_card)
         history_row = QHBoxLayout()
-        history_row.addWidget(QLabel("保存済みサンプル"))
+        history_row.addWidget(QLabel("計測履歴"))
+        history_row.addStretch(1)
         self.clear_history = QPushButton("履歴を削除")
+        self.clear_history.setProperty("variant", "ghost")
         self.clear_history.clicked.connect(self._clear_history)
         history_row.addWidget(self.clear_history)
         root.addLayout(history_row)
@@ -61,6 +65,19 @@ class PerformancePage(QWidget):
         self._timer.timeout.connect(self.refresh)
         self._timer.setInterval(2000)
         self.budget.setText(detect_budget(self.services.settings).label)
+
+    def _metric(self, grid: QGridLayout, row: int, column: int, label: str, value: str) -> QLabel:
+        card = Card()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 13, 15, 13)
+        caption = QLabel(label)
+        caption.setProperty("variant", "muted")
+        output = QLabel(value)
+        output.setProperty("variant", "heading")
+        layout.addWidget(caption)
+        layout.addWidget(output)
+        grid.addWidget(card, row, column)
+        return output
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
@@ -85,9 +102,7 @@ class PerformancePage(QWidget):
             else "—"
         )
         self.memory.setText(memory)
-        self.disk.setText(
-            f"{_bytes(snapshot.disk_free_bytes)} / {_bytes(snapshot.disk_total_bytes)}"
-        )
+        self.disk.setText(f"ディスク空き  {_bytes(snapshot.disk_free_bytes)} / {_bytes(snapshot.disk_total_bytes)}")
         self.processes.setText(
             "—" if snapshot.process_count is None else str(snapshot.process_count)
         )
