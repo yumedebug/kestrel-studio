@@ -34,14 +34,23 @@ DuckDuckGo search domain. Search is subject to the public endpoint's availabilit
 rate limits, robots/service terms and result quality; no API key or paid account is
 included or required.
 
-On Windows systems with 4 GB RAM or less, inference settings are adapted at runtime
-without changing the configured profile: context is capped at 2048, batch size at
-128, CPU threads at 2, and chat output at 512 tokens. The Performance Monitor shows
-the selected memory profile and budget. Computer Use and Performance polling are
-started only while their pages are visible, and the model manager releases backend
-objects and runs garbage collection after unload. History queries and terminal
-output remain bounded; this reduces peak memory but cannot compensate for a model
-that is intrinsically larger than available RAM.
+On Windows systems with 4 GB RAM or less, or two logical CPUs (a conservative
+proxy for Celeron-class PCs), inference settings are adapted at runtime without
+changing the configured profile: context is capped at 1024, batch size at 32,
+CPU threads at 1, and chat output at 256 tokens. This is a safe low-quality/
+low-resource mode, not a feature removal; users can still load models, use cloud
+providers, search, automate Windows, and run the local API. The Performance Monitor
+shows the selected memory profile and budget. Computer Use and Performance polling
+are started only while their pages are visible, and the model manager releases
+backend objects and runs garbage collection after unload. History queries and
+terminal output remain bounded; this reduces peak memory but cannot compensate for
+a model that is intrinsically larger than available RAM.
+
+Startup does not scan the entire model directory automatically. The GGUF library is
+scanned when the Models page is first opened or when the user explicitly rescans it,
+so starting the app without using a local model avoids disk-heavy work. The app
+does not load the last model unless the selected start behavior explicitly requests
+it, and it does not start the local API unless server auto-start is enabled.
 
 The lightweight UI path also avoids polling while pages are hidden: Computer Use,
 Performance, Server and model-download monitoring update only while visible and

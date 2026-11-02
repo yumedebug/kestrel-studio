@@ -152,7 +152,7 @@ class LoadOptions:
             context_length=max(128, int(ctx)),
             gpu_layers=max(0, int(gpu)),
             cpu_threads=max(1, int(threads)),
-            batch_size=max(32, int(batch)),
+            batch_size=max(16 if budget.ultra_low else 32, int(batch)),
         )
 
     def to_dict(self) -> dict[str, Any]:

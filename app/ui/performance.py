@@ -63,7 +63,7 @@ class PerformancePage(QWidget):
         root.addStretch(1)
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
-        self._timer.setInterval(2000)
+        self._timer.setInterval(5000)
         self.budget.setText(detect_budget(self.services.settings).label)
 
     def _metric(self, grid: QGridLayout, row: int, column: int, label: str, value: str) -> QLabel:

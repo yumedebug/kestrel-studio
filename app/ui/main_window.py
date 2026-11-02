@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
         self._status: dict[str, Any] = services.inference.status()
         self._workers: list[TaskWorker] = []
         self._scan_worker: TaskWorker | None = None
+        self._library_scanned = False
         self._unload_worker: UnloadWorker | None = None
         self._model_dir = str(self.settings.get("general.model_directory", ""))
         self._status_timer = QTimer(self)
@@ -311,6 +312,8 @@ class MainWindow(QMainWindow):
                 page.refresh()
             elif key == "models":
                 page.refresh()
+                if not self._library_scanned:
+                    self.scan_library()
             elif key == "discover":
                 page.refresh_destination()
             elif key == "server":
@@ -528,8 +531,6 @@ class MainWindow(QMainWindow):
             self.show_status_message(
                 "Settings were repaired: " + "; ".join(warnings[:2]), timeout=12000
             )
-        self.scan_library()
-
         behavior = str(self.settings.get("general.start_behavior", "chat"))
         if behavior == "resume_last_chat":
             self._resume_last_chat()
@@ -590,6 +591,7 @@ class MainWindow(QMainWindow):
 
         def done(summary: Any) -> None:
             self._scan_worker = None
+            self._library_scanned = True
             changed = getattr(summary, "added", 0) + getattr(summary, "updated", 0)
             missing = getattr(summary, "missing", 0)
             invalid = getattr(summary, "invalid", 0)
