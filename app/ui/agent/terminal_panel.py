@@ -27,7 +27,7 @@ from app.agent.process_manager import SHELL_LABELS
 from app.ui.i18n import ja
 from app.ui.theme import current_palette
 
-MAX_OUTPUT_CHARS = 400_000
+MAX_OUTPUT_CHARS = 160_000
 
 
 class TerminalPanel(QWidget):
@@ -87,7 +87,7 @@ class TerminalPanel(QWidget):
         self.output.setReadOnly(True)
         self.output.setObjectName("codeView")
         self.output.setFrameShape(QFrame.NoFrame)
-        self.output.setMaximumBlockCount(20_000)
+        self.output.setMaximumBlockCount(6_000)
         font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
         font.setPointSizeF(9.0)
         self.output.setFont(font)
@@ -160,6 +160,7 @@ class TerminalPanel(QWidget):
     def append_output(self, text: str, stream: str = "stdout") -> None:
         if not text:
             return
+        text = text[-MAX_OUTPUT_CHARS:]
         color = self._colors["danger"] if stream == "stderr" else self._colors["text"]
         self._append(f'<span style="color:{color};">{_escape(text.rstrip(chr(10)))}</span>')
 

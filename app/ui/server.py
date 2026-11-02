@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QHideEvent, QShowEvent
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -39,8 +39,16 @@ class ServerPage(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
         self._timer.timeout.connect(self.refresh)
-        self._timer.start()
         self.refresh()
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self.refresh()
+        self._timer.start()
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._timer.stop()
+        super().hideEvent(event)
 
     def _build(self) -> None:
         layout = QVBoxLayout(self)

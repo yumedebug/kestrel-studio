@@ -555,7 +555,7 @@ class AgentPage(QWidget):
             log.exception("could not restore command history")
         self._reset_views()
         try:
-            for message in self.store.list_messages(task.id):
+            for message in self.store.list_messages(task.id, limit=200):
                 role = "user" if message.role == "user" else "assistant"
                 self._append_message(role, message.content)
         except Exception:

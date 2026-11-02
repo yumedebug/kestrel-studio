@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.agent.planner import ModelUnavailable, Plan, PlanStep, Planner, format_memory
-from app.agent.subagents import build_subagents, subagent_for_tool
+from app.agent.subagents import SUBAGENT_CLASSES, build_subagent, build_subagents, subagent_for_tool
 from app.agent.tools.registry import ToolContext, ToolResult
 from app.agent.validator import ToolValidationError
 
@@ -97,6 +97,9 @@ class AgentController:
         self.performance_monitor = performance_monitor
         self._limits = limits or AgentLimits()
         self._subagents: dict[str, Any] | None = None
+        self._subagent_names_by_tool = {
+            tool: cls.name for cls in SUBAGENT_CLASSES for tool in cls.tools
+        }
 
         self._lock = threading.RLock()
         self._listener: Callable[[dict[str, Any]], None] | None = None
@@ -120,6 +123,19 @@ class AgentController:
         if self._subagents is None:
             self._subagents = build_subagents(self.planner, self.permissions)
         return dict(self._subagents)
+
+    def _subagent_for_tool(self, tool: str) -> Any:
+        name = self._subagent_names_by_tool.get(tool)
+        if not name:
+            return None
+        if self._subagents is None:
+            self._subagents = {}
+        agent = self._subagents.get(name)
+        if agent is None:
+            agent = build_subagent(self.planner, self.permissions, name)
+            if agent is not None:
+                self._subagents[name] = agent
+        return agent
 
     @property
     def state(self) -> str:
@@ -572,7 +588,7 @@ class AgentController:
     def _step_hint(self, step: PlanStep | None, goal: str, observation: str) -> str:
         if step is None:
             return ""
-        agent = subagent_for_tool(self.subagents, step.tool) if step.tool else None
+        agent = self._subagent_for_tool(step.tool) if step.tool else None
         if agent is None or not agent.available:
             return ""
         return self._consult(

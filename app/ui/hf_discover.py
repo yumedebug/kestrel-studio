@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QSize, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QColor, QDesktopServices, QFont
+from PySide6.QtGui import QColor, QDesktopServices, QFont, QHideEvent, QShowEvent
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -288,7 +288,20 @@ class DiscoverPage(QWidget):
         self._poll_timer = QTimer(self)
         self._poll_timer.setInterval(500)
         self._poll_timer.timeout.connect(self._poll_downloads)
-        self._poll_timer.start()
+        self._poll_timer.setInterval(1000)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._poll_downloads(force=True)
+        if any(
+            task.status in {"queued", "downloading", "verifying", "cancelling"}
+            for task in self.downloads.snapshot()
+        ):
+            self._poll_timer.start()
+
+    def hideEvent(self, event: QHideEvent) -> None:
+        self._poll_timer.stop()
+        super().hideEvent(event)
 
     # -- construction ------------------------------------------------------
     def _build(self) -> None:
@@ -765,6 +778,8 @@ class DiscoverPage(QWidget):
                 expected_sha256=file.sha256,
                 total_bytes=file.size or 0,
             )
+            self._poll_timer.start()
+            self._poll_downloads(force=True)
         except Exception as exc:
             show_error(self, "Could not start download", str(exc))
             return
@@ -841,6 +856,8 @@ class DiscoverPage(QWidget):
                 )
                 self._download_rows[task.id] = row
             row.update_task(task)
+        if not active and not force:
+            self._poll_timer.stop()
         localize_widget_tree(self)
         for task_id in list(self._download_rows):
             if task_id not in seen:

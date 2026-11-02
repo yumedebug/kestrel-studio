@@ -546,7 +546,7 @@ class ChatPage(QWidget):
         self._current_chat_id = chat.id
         self._current_chat = chat
         self._chat_active = True
-        self._messages = self.db.list_messages(chat.id)
+        self._messages = self.db.list_messages(chat.id, limit=200)
         self._pending_params = GenerationParams.from_settings(chat.params or {})
         self._pending_system = chat.system_prompt or ""
         self.title_label.setText(chat.title)

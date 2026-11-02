@@ -43,6 +43,13 @@ objects and runs garbage collection after unload. History queries and terminal
 output remain bounded; this reduces peak memory but cannot compensate for a model
 that is intrinsically larger than available RAM.
 
+The lightweight UI path also avoids polling while pages are hidden: Computer Use,
+Performance, Server and model-download monitoring update only while visible and
+active. GPU/process measurements are cached because invoking `nvidia-smi` and
+Windows process enumeration on every paint is unnecessarily expensive. Chat and
+Agent history are loaded with bounded recent-message windows, and the Agent
+terminal keeps a bounded visible buffer while retaining persisted command history.
+
 The planner requires a working model. This workstation has no local GGUF runtime and no provider key, so the planner loop was validated with deterministic fake model responses in the test suite, not against a real LLM. Manual terminal commands, tool execution, permission checks, task persistence, and sub-agent isolation were exercised separately; review every command before approving it.
 
 ## Requirements

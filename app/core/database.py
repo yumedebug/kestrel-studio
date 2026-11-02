@@ -249,11 +249,13 @@ class Database:
             except sqlite3.Error as exc:
                 raise DatabaseError(f"Could not update message: {exc}") from exc
 
-    def list_messages(self, chat_id: str) -> list[Message]:
+    def list_messages(self, chat_id: str, limit: int = 200) -> list[Message]:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC, rowid ASC",
-                (chat_id,),
+                "SELECT * FROM (SELECT rowid AS _rowid, * FROM messages WHERE chat_id = ? "
+                "ORDER BY created_at DESC, rowid DESC LIMIT ?) "
+                "ORDER BY created_at ASC, _rowid ASC",
+                (chat_id, max(1, int(limit))),
             ).fetchall()
         return [self._message_from_row(row) for row in rows]
 

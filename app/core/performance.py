@@ -54,13 +54,15 @@ class PerformanceMonitor:
 
     def __init__(self) -> None:
         self._last_cpu: tuple[int, int, float] | None = None
+        self._cached_gpu: tuple[float, int | None, int | None] = (0.0, None, None)
+        self._cached_processes: tuple[float, int | None] = (0.0, None)
 
     def sample(self, *, store: Any = None, task_id: str = "", inference: Any = None) -> PerformanceSnapshot:
         now = time.time()
         cpu = self._cpu_percent(now)
         memory_used, memory_total = self._memory()
         disk_free, disk_total = self._disk()
-        gpu_used, gpu_total = self._gpu_memory()
+        gpu_used, gpu_total = self._cached_gpu_memory(now)
         inference_data: dict[str, Any] = {}
         if inference is not None:
             try:
@@ -80,7 +82,7 @@ class PerformanceMonitor:
             memory_total_bytes=memory_total,
             disk_free_bytes=disk_free,
             disk_total_bytes=disk_total,
-            process_count=self._process_count(),
+            process_count=self._cached_process_count(now),
             gpu_memory_used_bytes=gpu_used,
             gpu_memory_total_bytes=gpu_total,
             model_memory_bytes=inference_data.get("model_memory_bytes"),
@@ -112,6 +114,17 @@ class PerformanceMonitor:
             return used, total
         except (OSError, ValueError, IndexError, subprocess.SubprocessError):
             return None, None
+
+    def _cached_gpu_memory(self, now: float) -> tuple[int | None, int | None]:
+        if now - self._cached_gpu[0] >= 5.0:
+            used, total = self._gpu_memory()
+            self._cached_gpu = (now, used, total)
+        return self._cached_gpu[1], self._cached_gpu[2]
+
+    def _cached_process_count(self, now: float) -> int | None:
+        if now - self._cached_processes[0] >= 15.0:
+            self._cached_processes = (now, self._process_count())
+        return self._cached_processes[1]
 
     def _cpu_percent(self, now: float) -> float | None:
         if os.name != "nt":

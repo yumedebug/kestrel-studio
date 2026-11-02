@@ -486,10 +486,11 @@ class AgentStore:
         task = self.get_task(task_id)
         return task.status if task else "running"
 
-    def list_messages(self, task_id: str) -> list[MessageRecord]:
+    def list_messages(self, task_id: str, limit: int = 200) -> list[MessageRecord]:
         rows = self.query(
-            "SELECT * FROM agent_messages WHERE task_id = ? ORDER BY created_at, rowid",
-            (task_id,),
+            "SELECT * FROM (SELECT rowid AS _rowid, * FROM agent_messages WHERE task_id = ? "
+            "ORDER BY created_at DESC, rowid DESC LIMIT ?) ORDER BY created_at, _rowid",
+            (task_id, max(1, int(limit))),
         )
         return [
             MessageRecord(

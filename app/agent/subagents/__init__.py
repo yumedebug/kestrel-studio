@@ -36,6 +36,15 @@ def build_subagents(planner: Any, permissions: Any) -> dict[str, SubAgent]:
     return {cls.name: cls(planner, view) for cls in SUBAGENT_CLASSES}
 
 
+def build_subagent(planner: Any, permissions: Any, name: str) -> SubAgent | None:
+    """Create one specialist on demand instead of materializing the full set."""
+    for cls in SUBAGENT_CLASSES:
+        if cls.name == name:
+            view = permissions.view() if hasattr(permissions, "view") else permissions
+            return cls(planner, view)
+    return None
+
+
 def subagent_for_tool(subagents: dict[str, SubAgent], tool: str) -> SubAgent | None:
     for agent in subagents.values():
         if tool in agent.tools:
@@ -48,5 +57,6 @@ __all__ = [
     "SUBAGENT_NAMES",
     "SubAgent",
     "build_subagents",
+    "build_subagent",
     "subagent_for_tool",
 ]
