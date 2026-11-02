@@ -26,17 +26,10 @@ from PySide6.QtWidgets import (
 from app.constants import APP_NAME, APP_VERSION
 from app.core.settings import SettingsStore
 from app.core.types import LoadOptions, LoadResult, ModelTarget
-from app.ui.agent.agent_page import AgentPage
 from app.ui.chat import ChatPage
-from app.ui.computer_use import ComputerUsePage
-from app.ui.hf_discover import DiscoverPage
 from app.ui.dialogs import CloudModelDialog, show_error
 from app.ui.icons import app_icon, make_icon
 from app.ui.i18n import localize_widget_tree
-from app.ui.models import ModelsPage
-from app.ui.performance import PerformancePage
-from app.ui.server import ServerPage
-from app.ui.settings import SettingsPage
 from app.ui.services import AppServices
 from app.ui.theme import current_palette, set_window_theme
 from app.ui.widgets import StatusChip
@@ -128,13 +121,13 @@ class MainWindow(QMainWindow):
         self.pages: dict[str, QWidget] = {}
         self._page_factories: dict[str, Callable[[], QWidget]] = {
             "chat": ChatPage,
-            "agent": AgentPage,
-            "computer": ComputerUsePage,
-            "performance": PerformancePage,
-            "discover": DiscoverPage,
-            "models": ModelsPage,
-            "server": ServerPage,
-            "settings": SettingsPage,
+            "agent": lambda services: self._lazy_page("agent", services),
+            "computer": lambda services: self._lazy_page("computer", services),
+            "performance": lambda services: self._lazy_page("performance", services),
+            "discover": lambda services: self._lazy_page("discover", services),
+            "models": lambda services: self._lazy_page("models", services),
+            "server": lambda services: self._lazy_page("server", services),
+            "settings": lambda services: self._lazy_page("settings", services),
         }
         for key, _label, _icon in NAV_PAGES:
             if key != "chat":
@@ -152,6 +145,31 @@ class MainWindow(QMainWindow):
 
         self.resize(1280, 820)
         self.setMinimumSize(1040, 660)
+
+    @staticmethod
+    def _lazy_page(key: str, services: AppServices) -> QWidget:
+        if key == "agent":
+            from app.ui.agent.agent_page import AgentPage
+            return AgentPage(services)
+        if key == "computer":
+            from app.ui.computer_use import ComputerUsePage
+            return ComputerUsePage(services)
+        if key == "performance":
+            from app.ui.performance import PerformancePage
+            return PerformancePage(services)
+        if key == "discover":
+            from app.ui.hf_discover import DiscoverPage
+            return DiscoverPage(services)
+        if key == "models":
+            from app.ui.models import ModelsPage
+            return ModelsPage(services)
+        if key == "server":
+            from app.ui.server import ServerPage
+            return ServerPage(services)
+        if key == "settings":
+            from app.ui.settings import SettingsPage
+            return SettingsPage(services)
+        raise KeyError(key)
 
     def _build_sidebar(self) -> QFrame:
         sidebar = QFrame()
@@ -490,6 +508,9 @@ class MainWindow(QMainWindow):
         self._update_sidebar_summary()
 
     def _update_sidebar_summary(self) -> None:
+        if self._active_page_key not in {"models", "discover"}:
+            self.library_summary.setText("モデル管理は必要時に読み込み")
+            return
         try:
             entries = self.services.library.entries()
             downloads = self.services.downloads.active_count()

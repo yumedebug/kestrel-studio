@@ -103,42 +103,20 @@ def _install_excepthooks(log_path: Path) -> None:
 
 
 def _create_services(settings):
-    from app.api.server import ApiServer
     from app.core import paths
     from app.core.credentials import create_credential_store
     from app.core.database import Database
-    from app.core.downloader import DownloadManager
-    from app.core.hf_client import HuggingFaceClient
     from app.core.inference import InferenceManager
-    from app.core.model_manager import ModelManager
     from app.ui.services import AppServices
 
     credentials = create_credential_store(paths.config_dir() / "secrets.dat")
     database = Database(paths.database_file())
-    hf = HuggingFaceClient(credentials, settings)
-    library = ModelManager(
-        paths.library_file(), Path(str(settings.get("general.model_directory")))
-    )
-
-    def register_download(path: Path) -> None:
-        try:
-            entry = library.add_file(path)
-            log.info("downloaded model registered: %s", entry.name)
-        except Exception:
-            log.exception("could not register downloaded model %s", path)
-
-    downloads = DownloadManager(credentials, on_complete=register_download)
     inference = InferenceManager(settings, credentials)
-    api_server = ApiServer(inference, settings)
     return AppServices(
         settings=settings,
         credentials=credentials,
         database=database,
-        hf=hf,
-        library=library,
-        downloads=downloads,
         inference=inference,
-        api_server=api_server,
     )
 
 
@@ -155,8 +133,8 @@ def _shutdown(services, window) -> None:
     if services is None:
         return
     for name, fn in (
-        ("API server", services.api_server.shutdown),
-        ("downloads", services.downloads.shutdown),
+        ("API server", services.shutdown_api_server),
+        ("downloads", services.shutdown_downloads),
         ("inference", services.inference.shutdown),
         ("database", services.database.close),
     ):

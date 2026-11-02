@@ -7,13 +7,9 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 
-from app.api.server import ApiServer
 from app.core.credentials import CredentialStore
 from app.core.database import Database
-from app.core.downloader import DownloadManager
-from app.core.hf_client import HuggingFaceClient
 from app.core.inference import InferenceManager
-from app.core.model_manager import ModelManager
 from app.core.settings import SettingsStore
 from app.core.performance import PerformanceMonitor
 
@@ -42,14 +38,72 @@ class AppServices:
     settings: SettingsStore
     credentials: CredentialStore
     database: Database
-    hf: HuggingFaceClient
-    library: ModelManager
-    downloads: DownloadManager
     inference: InferenceManager
-    api_server: ApiServer
+    _hf: Any = field(default=None, repr=False)
+    _library: Any = field(default=None, repr=False)
+    _downloads: Any = field(default=None, repr=False)
+    _api_server: Any = field(default=None, repr=False)
     performance: PerformanceMonitor = field(default_factory=PerformanceMonitor)
     bridge: InferenceBridge = field(default_factory=InferenceBridge)
     _agent_store: Any = field(default=None, repr=False)
+
+    @property
+    def hf(self):
+        if self._hf is None:
+            from app.core.hf_client import HuggingFaceClient
+
+            self._hf = HuggingFaceClient(self.credentials, self.settings)
+        return self._hf
+
+    @property
+    def library(self):
+        if self._library is None:
+            from pathlib import Path
+            from app.core import paths
+            from app.core.model_manager import ModelManager
+
+            self._library = ModelManager(
+                paths.library_file(),
+                Path(str(self.settings.get("general.model_directory"))),
+            )
+        return self._library
+
+    @property
+    def downloads(self):
+        if self._downloads is None:
+            from app.core.downloader import DownloadManager
+
+            def register_download(path):
+                try:
+                    self.library.add_file(path)
+                except Exception:
+                    import logging
+                    logging.getLogger(__name__).exception(
+                        "could not register downloaded model %s", path
+                    )
+
+            self._downloads = DownloadManager(
+                self.credentials,
+                on_complete=register_download,
+            )
+        return self._downloads
+
+    @property
+    def api_server(self):
+        """Create the optional local API server only when first used."""
+        if self._api_server is None:
+            from app.api.server import ApiServer
+
+            self._api_server = ApiServer(self.inference, self.settings)
+        return self._api_server
+
+    def shutdown_api_server(self) -> None:
+        if self._api_server is not None:
+            self._api_server.shutdown()
+
+    def shutdown_downloads(self) -> None:
+        if self._downloads is not None:
+            self._downloads.shutdown()
 
     @property
     def agent_store(self):
