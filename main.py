@@ -243,9 +243,8 @@ def main(argv: list[str] | None = None) -> int:
         window.show()
 
         if args.smoke_test:
-            discover_page = window.pages.get("discover")
-            if discover_page is not None:
-                discover_page.disable_automatic_search()
+            discover_page = window._ensure_page("discover")
+            discover_page.disable_automatic_search()
 
             def smoke() -> None:
                 # Visit every page so lazy pages are also constructed, while

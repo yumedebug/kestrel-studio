@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.services = services
         self.settings: SettingsStore = services.settings
         self._status: dict[str, Any] = services.inference.status()
+        self._status_signature: tuple[Any, ...] = ()
+        self._active_page_key = "chat"
         self._workers: list[TaskWorker] = []
         self._scan_worker: TaskWorker | None = None
         self._library_scanned = False
@@ -102,6 +104,7 @@ class MainWindow(QMainWindow):
             self.pages[key].deleteLater()
             self.pages[key] = page
             self.stack.insertWidget(index, page)
+            self._wire_page(key, page)
         return page
 
     # -- construction ------------------------------------------------------
@@ -134,9 +137,10 @@ class MainWindow(QMainWindow):
             "settings": SettingsPage,
         }
         for key, _label, _icon in NAV_PAGES:
-            if key in {"computer", "performance"}:
-                # These pages poll the OS and capture screenshots; construct them
-                # only when the user opens them.
+            if key != "chat":
+                # Construct only the first screen at startup. Agent, discovery,
+                # model metadata and settings pages create many widgets and
+                # services, so defer them until the user opens them.
                 page = QWidget()
             else:
                 page = self._page_factories[key](self.services)
@@ -256,35 +260,33 @@ class MainWindow(QMainWindow):
     # -- wiring ------------------------------------------------------------
     def _wire(self) -> None:
         chat = self.pages["chat"]
-        discover = self.pages["discover"]
-        models = self.pages["models"]
-        server = self.pages["server"]
-        settings = self.pages["settings"]
-
-        agent = self.pages["agent"]
-        agent.show_status_message.connect(self.show_status_message)
 
         chat.cloud_requested.connect(self.choose_cloud_model)
         chat.models_page_requested.connect(lambda: self.switch_page("models"))
         chat.generation_active.connect(self._generation_active)
         chat.show_status_message.connect(self.show_status_message)
 
-        discover.library_changed.connect(self._library_changed)
-        discover.show_status_message.connect(self.show_status_message)
-
-        models.models_changed.connect(self._library_changed)
-        models.model_changed.connect(self._refresh_status)
-        models.show_status_message.connect(self.show_status_message)
-
-        server.settings_requested.connect(self._open_server_settings)
-        server.show_status_message.connect(self.show_status_message)
-
-        settings.settings_saved.connect(self._settings_saved)
-        settings.cloud_changed.connect(self._refresh_status)
-        settings.history_cleared.connect(self._history_cleared)
-        settings.show_status_message.connect(self.show_status_message)
-
         self.switch_page("chat")
+
+    def _wire_page(self, key: str, page: QWidget) -> None:
+        """Connect signals for a page when its deferred instance is created."""
+        if key == "agent":
+            page.show_status_message.connect(self.show_status_message)
+        elif key == "discover":
+            page.library_changed.connect(self._library_changed)
+            page.show_status_message.connect(self.show_status_message)
+        elif key == "models":
+            page.models_changed.connect(self._library_changed)
+            page.model_changed.connect(self._refresh_status)
+            page.show_status_message.connect(self.show_status_message)
+        elif key == "server":
+            page.settings_requested.connect(self._open_server_settings)
+            page.show_status_message.connect(self.show_status_message)
+        elif key == "settings":
+            page.settings_saved.connect(self._settings_saved)
+            page.cloud_changed.connect(self._refresh_status)
+            page.history_cleared.connect(self._history_cleared)
+            page.show_status_message.connect(self.show_status_message)
 
     # -- navigation --------------------------------------------------------
     def switch_page(self, key: str) -> None:
@@ -292,6 +294,7 @@ class MainWindow(QMainWindow):
             return
         page = self._ensure_page(key)
         self.stack.setCurrentWidget(page)
+        self._active_page_key = key
         button = self.nav_buttons.get(key)
         if button is not None and not button.isChecked():
             button.setChecked(True)
@@ -306,6 +309,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"{APP_NAME} — {label}")
 
         try:
+            if key == "chat":
+                page.set_inference_status(self._status)
+            elif key in {"agent", "models", "server", "settings"}:
+                page.update_inference_status(self._status)
             if key == "chat":
                 page.refresh_conversations()
             elif key == "agent":
@@ -432,6 +439,19 @@ class MainWindow(QMainWindow):
         state = str(status.get("state") or "idle")
         name = status.get("display_name") or status.get("model_id") or ""
         target = status.get("target") or {}
+        signature = (
+            state,
+            name,
+            status.get("kind") or "",
+            status.get("provider") or "",
+            status.get("error") or "",
+            status.get("warning") or "",
+            (target.get("path") if isinstance(target, dict) else ""),
+        )
+        changed = signature != self._status_signature
+        if not changed:
+            return
+        self._status_signature = signature
         if state == "ready" and name:
             kind = "Local" if status.get("kind") == "local" else "Cloud"
             provider = status.get("provider") or ""
@@ -456,20 +476,18 @@ class MainWindow(QMainWindow):
         if state == "error" and status.get("error"):
             self.show_status_message(str(status["error"]), timeout=12000)
 
-        for key in ("chat", "agent", "models", "server", "settings"):
-            page = self.pages.get(key)
-            if page is None:
-                continue
+        key = self._active_page_key
+        page = self.pages.get(key)
+        if page is not None:
             try:
                 if key == "chat":
                     page.set_inference_status(status)
-                else:
+                elif key in {"agent", "models", "server", "settings"}:
                     page.update_inference_status(status)
             except Exception:
                 log.exception("failed to update %s page status", key)
 
         self._update_sidebar_summary()
-        localize_widget_tree(self)
 
     def _update_sidebar_summary(self) -> None:
         try:
@@ -494,10 +512,10 @@ class MainWindow(QMainWindow):
             self._refresh_icons()
         self._apply_status(self._status)
         self._update_sidebar_summary()
-        models = self.pages["models"]
+        models = self._ensure_page("models")
         models.refresh()
-        self.pages["discover"].refresh_destination()
-        self.pages["server"].refresh()
+        self._ensure_page("discover").refresh_destination()
+        self._ensure_page("server").refresh()
 
         model_dir = str(self.settings.get("general.model_directory", ""))
         if model_dir != self._model_dir:
@@ -514,7 +532,7 @@ class MainWindow(QMainWindow):
 
     def _library_changed(self) -> None:
         try:
-            self.pages["models"].refresh()
+            self._ensure_page("models").refresh()
         except Exception:
             log.exception("could not refresh the model library")
         self._update_sidebar_summary()
@@ -693,7 +711,9 @@ class MainWindow(QMainWindow):
             if page is None:
                 continue
             try:
-                page.shutdown()
+                shutdown = getattr(page, "shutdown", None)
+                if callable(shutdown):
+                    shutdown()
             except Exception:
                 log.exception("error shutting down %s page", key)
         for worker in list(self._workers):
