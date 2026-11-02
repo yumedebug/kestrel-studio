@@ -20,12 +20,12 @@ DEFAULT_SERVER_PORT = 1234
 
 # Theme colours are also used by custom-painted widgets.
 DARK = {
-    "bg": "#17181b",
-    "bg_elevated": "#202126",
-    "bg_input": "#292a30",
-    "bg_hover": "#33343b",
-    "border": "#34353b",
-    "border_strong": "#484950",
+    "bg": "#111318",
+    "bg_elevated": "#191c23",
+    "bg_input": "#20242d",
+    "bg_hover": "#2a303b",
+    "border": "#2a303a",
+    "border_strong": "#3c4655",
     "text": "#f5f5f7",
     "text_muted": "#b2b3bb",
     "text_faint": "#888a94",

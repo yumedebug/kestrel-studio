@@ -23,6 +23,9 @@ QWidget {
 QMainWindow, QDialog, QWidget#root {
     background: $bg;
 }
+QWidget#root {
+    background: $bg;
+}
 QToolTip {
     background: $bg_elevated;
     color: $text;
@@ -31,11 +34,11 @@ QToolTip {
     padding: 6px 8px;
 }
 QFrame#sidebar {
-    background: $bg_elevated;
+    background: $bg;
     border-right: 1px solid $border;
 }
 QFrame#topbar {
-    background: $bg;
+    background: $bg_elevated;
     border-bottom: 1px solid $border;
 }
 QLabel {
@@ -95,12 +98,12 @@ QLabel#sectionTitle {
 QFrame[card="true"] {
     background: $bg_elevated;
     border: 1px solid $border;
-    border-radius: 14px;
+    border-radius: 12px;
 }
 QFrame[card="soft"] {
     background: $bg_input;
-    border: 1px solid $border;
-    border-radius: 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
 }
 QFrame#bubbleAssistant {
     background: $bg_elevated;
@@ -128,16 +131,16 @@ QFrame#dropZone {
     border-radius: 10px;
 }
 QPushButton {
-    background: $bg_input;
+    background: $bg_elevated;
     color: $text;
-    border: 1px solid $border_strong;
-    border-radius: 10px;
-    padding: 10px 18px;
-    min-height: 24px;
+    border: 1px solid $border;
+    border-radius: 8px;
+    padding: 9px 16px;
+    min-height: 22px;
 }
 QPushButton:hover {
     background: $bg_hover;
-    border-color: $text_faint;
+    border-color: $border_strong;
 }
 QPushButton:pressed {
     background: $bg_elevated;
@@ -150,7 +153,7 @@ QPushButton:disabled {
 QPushButton[variant="primary"] {
     background: $accent;
     color: #ffffff;
-    border: 1px solid $accent;
+    border: 1px solid transparent;
     font-weight: 600;
 }
 QPushButton[variant="primary"]:hover {
@@ -183,10 +186,10 @@ QPushButton[variant="ghost"]:hover {
 QPushButton[variant="nav"] {
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 10px;
+    border-radius: 8px;
     color: $text_muted;
     text-align: left;
-    padding: 12px 16px;
+    padding: 10px 14px;
     font-weight: 500;
 }
 QPushButton[variant="nav"]:hover {
@@ -197,6 +200,8 @@ QPushButton[variant="nav"]:checked {
     background: $accent_soft;
     color: $accent_hover;
     font-weight: 600;
+    border-left: 3px solid $accent;
+    padding-left: 11px;
 }
 QPushButton[variant="chip"] {
     border-radius: 13px;
@@ -232,8 +237,8 @@ QLineEdit, QPlainTextEdit, QTextEdit, QSpinBox, QDoubleSpinBox {
     background: $bg_input;
     color: $text;
     border: 1px solid $border_strong;
-    border-radius: 10px;
-    padding: 11px 14px;
+    border-radius: 8px;
+    padding: 10px 13px;
     selection-background-color: $selection;
     selection-color: $text;
 }
@@ -263,8 +268,8 @@ QComboBox {
     background: $bg_input;
     color: $text;
     border: 1px solid $border_strong;
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 8px;
+    padding: 9px 13px;
     min-height: 26px;
 }
 QComboBox:hover {
@@ -373,9 +378,9 @@ QListWidget, QTreeWidget, QTableWidget {
     outline: none;
 }
 QListWidget::item {
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin: 2px 1px;
+    border-radius: 7px;
+    padding: 9px 11px;
+    margin: 1px 1px;
     color: $text;
 }
 QListWidget::item:hover {
@@ -493,9 +498,9 @@ QMessageBox QLabel {
     color: $text;
 }
 QStatusBar {
-    background: $bg_elevated;
+    background: $bg;
     color: $text_muted;
-    border-top: 1px solid $border;
+    border-top: 1px solid transparent;
 }
 QTextBrowser {
     background: transparent;
