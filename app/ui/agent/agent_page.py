@@ -196,7 +196,7 @@ class AgentPage(QWidget):
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
-        splitter.setHandleWidth(10)
+        splitter.setHandleWidth(2)
 
         self.task_panel = TaskListPanel()
         self.task_panel.setMinimumWidth(220)
@@ -209,6 +209,7 @@ class AgentPage(QWidget):
         center_layout.setSpacing(12)
 
         self.tabs = QTabWidget()
+        self.tabs.setContentsMargins(0, 6, 0, 0)
         self.tabs.addTab(self._build_chat_tab(), ja("Agent Chat"))
         self.plan_panel = PlanPanel()
         self.tabs.addTab(self.plan_panel, ja("Task Plan"))
@@ -216,6 +217,7 @@ class AgentPage(QWidget):
         activity_tabs = QTabWidget()
         activity_tabs.setDocumentMode(True)
         activity_tabs.setTabPosition(QTabWidget.North)
+        activity_tabs.setContentsMargins(0, 4, 0, 0)
         self.tool_log = EventLogPanel("ツールの実行結果がここに表示されます。")
         activity_tabs.addTab(self.tool_log, ja("Tools"))
         self.file_log = EventLogPanel("ファイルの変更がここに表示されます。")

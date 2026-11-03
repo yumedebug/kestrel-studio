@@ -61,6 +61,7 @@ class ComputerUsePage(QWidget):
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
+        splitter.setHandleWidth(2)
         left = QVBoxLayout()
         left_widget = QWidget()
         left_widget.setLayout(left)
@@ -94,6 +95,9 @@ class ComputerUsePage(QWidget):
         self.y = QSpinBox()
         self.y.setRange(0, 10000)
         coordinates = QGridLayout()
+        coordinates.setContentsMargins(4, 4, 4, 4)
+        coordinates.setHorizontalSpacing(10)
+        coordinates.setVerticalSpacing(8)
         coordinates.addWidget(QLabel("X"), 0, 0)
         coordinates.addWidget(self.x, 0, 1)
         coordinates.addWidget(QLabel("Y"), 1, 0)

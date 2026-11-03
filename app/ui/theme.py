@@ -384,11 +384,12 @@ QListWidget, QTreeWidget, QTableWidget {
     background: transparent;
     border: none;
     outline: none;
+    padding: 4px;
 }
 QListWidget::item {
     border-radius: 7px;
     padding: 9px 11px;
-    margin: 1px 1px;
+    margin: 3px 2px;
     color: $text;
 }
 QListWidget::item:hover {
@@ -406,7 +407,7 @@ QTableWidget {
     alternate-background-color: $bg_input;
 }
 QTableWidget::item {
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: none;
 }
 QTableWidget::item:selected {
@@ -430,6 +431,7 @@ QProgressBar {
     border: none;
     border-radius: 4px;
     height: 8px;
+    margin: 3px 0;
     text-align: center;
     color: transparent;
 }
@@ -440,21 +442,31 @@ QProgressBar::chunk {
 QTabWidget::pane {
     border: none;
     background: transparent;
-    padding: 8px 0 0 0;
+    margin-top: 7px;
 }
 QTabBar::tab {
     background: transparent;
     color: $text_muted;
     padding: 9px 16px 11px 16px;
-    margin: 0 3px;
+    margin: 0 4px 5px 4px;
     border-bottom: 2px solid transparent;
 }
 QTabBar::tab:selected {
     color: $text;
     border-bottom: 2px solid $accent;
 }
+QSplitter {
+    background: transparent;
+}
 QSplitter::handle {
     background: transparent;
+    border: none;
+}
+QSplitter::handle:horizontal {
+    width: 6px;
+}
+QSplitter::handle:vertical {
+    height: 6px;
 }
 QMenu {
     background: $bg_elevated;

@@ -256,6 +256,7 @@ class ChatPage(QWidget):
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
+        splitter.setHandleWidth(2)
 
         # Conversation sidebar (inside the page).
         conversations = QFrame()

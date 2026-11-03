@@ -342,6 +342,7 @@ class DiscoverPage(QWidget):
         layout.addWidget(self.search_status)
 
         splitter = QSplitter(Qt.Horizontal)
+        splitter.setHandleWidth(2)
         splitter.setChildrenCollapsible(False)
 
         # Results.

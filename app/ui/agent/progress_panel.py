@@ -75,7 +75,7 @@ class ProgressPanel(QWidget):
         root.addWidget(_caption("実行中のツール"))
         self.active_tools = QListWidget()
         self.active_tools.setFixedHeight(64)
-        self.active_tools.setContentsMargins(4, 4, 4, 4)
+        self.active_tools.setViewportMargins(4, 4, 4, 4)
         root.addWidget(self.active_tools)
 
         root.addSpacing(2)

@@ -107,7 +107,7 @@ class MainWindow(QMainWindow):
         root.setObjectName("root")
         outer = QHBoxLayout(root)
         outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
+        outer.setSpacing(8)
 
         outer.addWidget(self._build_sidebar())
 

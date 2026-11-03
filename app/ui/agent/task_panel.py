@@ -49,8 +49,8 @@ class TaskListPanel(QWidget):
 
     def _build(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(8)
+        root.setContentsMargins(4, 10, 4, 10)
+        root.setSpacing(10)
 
         self.new_button = QPushButton(ja("＋  New Task"))
         self.new_button.setProperty("variant", "primary")
@@ -60,13 +60,16 @@ class TaskListPanel(QWidget):
 
         root.addWidget(_caption("Agent Sessions"))
         self.sessions = QListWidget()
-        self.sessions.setSpacing(1)
+        self.sessions.setSpacing(3)
+        self.sessions.setViewportMargins(3, 3, 3, 3)
         self.sessions.currentItemChanged.connect(self._selected)
         root.addWidget(self.sessions, 1)
 
         root.addWidget(_caption("Task History"))
         self.history = QListWidget()
         self.history.setMaximumHeight(130)
+        self.history.setSpacing(3)
+        self.history.setViewportMargins(3, 3, 3, 3)
         self.history.currentItemChanged.connect(self._selected)
         root.addWidget(self.history)
 
@@ -168,12 +171,13 @@ class PlanPanel(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(6)
+        layout.setSpacing(9)
         self.notes = muted_label("")
         self.notes.setStyleSheet("font-size: 8.5pt;")
         layout.addWidget(self.notes)
         self.list = QListWidget()
-        self.list.setSpacing(2)
+        self.list.setSpacing(4)
+        self.list.setViewportMargins(3, 3, 3, 3)
         layout.addWidget(self.list, 1)
 
     def set_plan(self, plan: dict[str, Any], current: int = 0) -> None:
@@ -210,7 +214,7 @@ class EventLogPanel(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(6)
+        layout.setSpacing(9)
         self.empty = QLabel(ja(empty_text))
         self.empty.setProperty("variant", "faint")
         self.empty.setWordWrap(True)
