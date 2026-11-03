@@ -440,16 +440,21 @@ QProgressBar::chunk {
 QTabWidget::pane {
     border: none;
     background: transparent;
+    padding: 8px 0 0 0;
 }
 QTabBar::tab {
     background: transparent;
     color: $text_muted;
-    padding: 8px 14px;
+    padding: 9px 16px 11px 16px;
+    margin: 0 3px;
     border-bottom: 2px solid transparent;
 }
 QTabBar::tab:selected {
     color: $text;
     border-bottom: 2px solid $accent;
+}
+QSplitter::handle {
+    background: transparent;
 }
 QMenu {
     background: $bg_elevated;

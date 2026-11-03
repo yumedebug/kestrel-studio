@@ -196,7 +196,7 @@ class AgentPage(QWidget):
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.setChildrenCollapsible(False)
-        splitter.setHandleWidth(1)
+        splitter.setHandleWidth(10)
 
         self.task_panel = TaskListPanel()
         self.task_panel.setMinimumWidth(220)
@@ -205,8 +205,8 @@ class AgentPage(QWidget):
 
         center = QWidget()
         center_layout = QVBoxLayout(center)
-        center_layout.setContentsMargins(12, 6, 12, 6)
-        center_layout.setSpacing(8)
+        center_layout.setContentsMargins(16, 10, 16, 10)
+        center_layout.setSpacing(12)
 
         self.tabs = QTabWidget()
         self.tabs.addTab(self._build_chat_tab(), ja("Agent Chat"))
