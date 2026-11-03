@@ -163,7 +163,7 @@ class AgentPage(QWidget):
         header_layout.setContentsMargins(20, 14, 20, 8)
         header_layout.setSpacing(10)
         title = QLabel("Hybrid Agent")
-        title.setObjectName("sectionTitle")
+        title.setProperty("variant", "title")
         header_layout.addWidget(title)
 
         self.mode_combo = QComboBox()
@@ -173,8 +173,25 @@ class AgentPage(QWidget):
         header_layout.addWidget(self.mode_combo)
 
         self.mode_hint = muted_label("")
-        self.mode_hint.setStyleSheet("font-size: 8.5pt;")
+        self.mode_hint.setWordWrap(False)
         header_layout.addWidget(self.mode_hint, 1)
+
+        self.state_label = muted_label("待機中")
+        self.state_label.setProperty("variant", "chip")
+        header_layout.addWidget(self.state_label)
+
+        self.start_button = QPushButton(ja("Start"))
+        self.start_button.setProperty("variant", "primary")
+        self.start_button.setCursor(Qt.PointingHandCursor)
+        header_layout.addWidget(self.start_button)
+
+        self.pause_button = QPushButton(ja("Pause"))
+        self.resume_button = QPushButton(ja("Resume"))
+        self.stop_button = QPushButton(ja("Stop"))
+        self.stop_button.setProperty("variant", "danger")
+        for button in (self.pause_button, self.resume_button, self.stop_button):
+            button.setCursor(Qt.PointingHandCursor)
+            header_layout.addWidget(button)
         root.addWidget(header)
 
         splitter = QSplitter(Qt.Horizontal)
@@ -195,40 +212,23 @@ class AgentPage(QWidget):
         self.tabs.addTab(self._build_chat_tab(), ja("Agent Chat"))
         self.plan_panel = PlanPanel()
         self.tabs.addTab(self.plan_panel, ja("Task Plan"))
-        self.terminal = TerminalPanel()
-        self.tabs.addTab(self.terminal, ja("Command Output"))
+
+        activity_tabs = QTabWidget()
+        activity_tabs.setDocumentMode(True)
+        activity_tabs.setTabPosition(QTabWidget.North)
         self.tool_log = EventLogPanel("ツールの実行結果がここに表示されます。")
-        self.tabs.addTab(self.tool_log, ja("Tool Results"))
+        activity_tabs.addTab(self.tool_log, ja("Tools"))
         self.file_log = EventLogPanel("ファイルの変更がここに表示されます。")
-        self.tabs.addTab(self.file_log, ja("File Changes"))
-        self.thought_log = EventLogPanel("作業方針と判断理由の要約が表示されます。")
-        self.tabs.addTab(self.thought_log, ja("Agent Thoughts"))
+        activity_tabs.addTab(self.file_log, ja("Files"))
+        self.thought_log = EventLogPanel("作業方針と検証結果の要約が表示されます。")
+        activity_tabs.addTab(self.thought_log, ja("Reasoning"))
+        self.tabs.addTab(activity_tabs, ja("Activity"))
+
+        self.terminal = TerminalPanel()
+        self.tabs.addTab(self.terminal, ja("Terminal"))
         self.memory_page = MemoryPage(self.memory)
         self.tabs.addTab(self.memory_page, ja("Memory"))
         center_layout.addWidget(self.tabs, 1)
-
-        controls = QHBoxLayout()
-        controls.setSpacing(8)
-        self.start_button = QPushButton(ja("Start"))
-        self.start_button.setProperty("variant", "primary")
-        self.start_button.setCursor(Qt.PointingHandCursor)
-        self.pause_button = QPushButton(ja("Pause"))
-        self.resume_button = QPushButton(ja("Resume"))
-        self.stop_button = QPushButton(ja("Stop"))
-        self.stop_button.setProperty("variant", "danger")
-        for button in (
-            self.start_button,
-            self.pause_button,
-            self.resume_button,
-            self.stop_button,
-        ):
-            button.setCursor(Qt.PointingHandCursor)
-            controls.addWidget(button)
-        controls.addStretch(1)
-        self.state_label = muted_label("待機中")
-        self.state_label.setStyleSheet("font-size: 8.5pt;")
-        controls.addWidget(self.state_label)
-        center_layout.addLayout(controls)
         splitter.addWidget(center)
 
         self.progress = ProgressPanel()

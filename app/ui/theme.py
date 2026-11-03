@@ -72,6 +72,14 @@ QLabel[variant="success"] {
 QLabel[variant="warning"] {
     color: $warning;
 }
+QLabel[variant="chip"] {
+    background: $bg_input;
+    color: $text_muted;
+    border: 1px solid $border;
+    border-radius: 12px;
+    padding: 5px 10px;
+    font-size: 8.5pt;
+}
 QLabel#appName {
     font-size: 13pt;
     font-weight: 600;
