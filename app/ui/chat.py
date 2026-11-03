@@ -174,17 +174,22 @@ class PromptEdit(QPlainTextEdit):
         self.setMaximumHeight(180)
         self.setTabChangesFocus(True)
         self._max_height = 170
+        self._contrast_stylesheet = ""
         self.document().contentsChanged.connect(self._adjust_height)
         self._apply_contrast()
 
     def _apply_contrast(self) -> None:
         c = current_palette()
-        self.setStyleSheet(
+        stylesheet = (
             "QPlainTextEdit { "
             f"background: {c['bg_input']}; color: {c['text']}; "
             f"selection-background-color: {c['selection']}; "
             f"selection-color: {c['text']}; }}"
         )
+        if stylesheet == self._contrast_stylesheet:
+            return
+        self._contrast_stylesheet = stylesheet
+        self.setStyleSheet(stylesheet)
 
     def changeEvent(self, event) -> None:  # type: ignore[override]
         super().changeEvent(event)
